@@ -21,13 +21,13 @@ jobs:
     steps:
       # ==========================
       # 删除旧 Release 和 Tag
-      # 保留最新10个
+      # 保留最新4个
       # ==========================
       - name: 清理旧版 Release
         uses: xcz-ns/delete-older-releases@main
         with:
           repo: ${{ github.repository }}
-          keep_latest: 6
+          keep_latest: 4
           delete_tags: true
         env:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
@@ -43,7 +43,7 @@ jobs:
           # ✅ 修复点：使用 delete_workflow_pattern 并指定目标工作流文件名（或写 "OpenWrt_LEDE Build" 也行）
           delete_workflow_pattern: "OpenWrt_LEDE_Build.yml"
           retain_days: 1
-          keep_minimum_runs: 6
+          keep_minimum_runs: 4
 
       # ==========================
       # 清理清理脚本自身的工作流
