@@ -1,0 +1,10 @@
+
+config global
+	option address '0.0.0.0'
+	option database '/etc/filebrowser.db'
+	option disable_exec '1'
+	option root_path '/'
+	option executable_directory '/usr/bin'
+	option port '18388'
+	option enable '1'
+

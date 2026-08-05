@@ -1,0 +1,123 @@
+
+config defaults
+	option synflood_protect '1'
+	option output 'ACCEPT'
+	option input 'REJECT'
+	option forward 'ACCEPT'
+	option syn_flood '0'
+	option flow_offloading '1'
+	option flow_offloading_hw '1'
+	option fullcone '2'
+	option log '1'
+	option log_level 'warning'
+
+config zone
+	option name 'lan'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+	option masq '1'
+	option network 'lan lanv6'
+	option input 'REJECT'
+
+config include
+	option path '/etc/firewall.user'
+
+config zone 'docker'
+	option network 'docker'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+	option name 'docker'
+
+config rule
+	option name '允许DHCP续租'
+	option src 'lan'
+	option proto 'udp'
+	option dest_port '68'
+	option target 'ACCEPT'
+	option family 'ipv4'
+
+config rule
+	option name '允许Ping'
+	option src 'lan'
+	option proto 'icmp'
+	option family 'ipv4'
+	option target 'ACCEPT'
+	list icmp_type 'echo-request'
+
+config rule
+	option name '允许IGMP'
+	option src 'lan'
+	option proto 'igmp'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name '允许DHCPv6'
+	option src 'lan'
+	option proto 'udp'
+	option dest_port '546'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name '允许MLD'
+	option src 'lan'
+	option proto 'icmp'
+	option family 'ipv6'
+	option target 'ACCEPT'
+	list src_ip 'fe80::/10'
+
+config rule
+	option name '允许ICMPv6入站'
+	option src 'lan'
+	option proto 'icmp'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+	list icmp_type 'bad-header'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'echo-reply'
+	list icmp_type 'echo-request'
+	list icmp_type 'neighbour-advertisement'
+	list icmp_type 'neighbour-solicitation'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'router-advertisement'
+	list icmp_type 'router-solicitation'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'unknown-header-type'
+
+config rule
+	option name '允许ICMPv6转发'
+	option src 'lan'
+	option dest '*'
+	option proto 'icmp'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+	list icmp_type 'bad-header'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'echo-reply'
+	list icmp_type 'echo-request'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'unknown-header-type'
+
+config rule
+	option name '允许本地子网'
+	option src 'lan'
+	option target 'ACCEPT'
+	list proto 'all'
+	list src_ip '192.168.11.0/24'
+
+config include 'miniupnpd'
+	option type 'script'
+	option path '/usr/share/miniupnpd/firewall.include'
+	option family 'any'
+	option reload '1'
+
+config include 'openclash'
+	option type 'script'
+	option path '/var/etc/openclash.include'
+	option reload '1'
+

@@ -1,0 +1,59 @@
+name: OpenWrt_Cleanup
+on:
+  workflow_run:
+    workflows:
+      - OpenWrt_LEDE Build
+    types:
+      - completed
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  cleanup:
+    name: 🧹 删除工作流
+    runs-on: ubuntu-22.04
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      # ==========================
+      # 删除旧 Release 和 Tag
+      # 保留最新10个
+      # ==========================
+      - name: 清理旧版 Release
+        uses: xcz-ns/delete-older-releases@main
+        with:
+          repo: ${{ github.repository }}
+          keep_latest: 10
+          delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+
+      # ==========================
+      # 清理目标构建工作流
+      # ==========================
+      - name: 清理 OpenWrt_LEDE_Build 工作流记录
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          # ✅ 修复点：使用 delete_workflow_pattern 并指定目标工作流文件名（或写 "OpenWrt_LEDE Build" 也行）
+          delete_workflow_pattern: "OpenWrt_LEDE_Build.yml"
+          retain_days: 1
+          keep_minimum_runs: 6
+
+      # ==========================
+      # 清理清理脚本自身的工作流
+      # ==========================
+      - name: 清理 OpenWrt_Cleanup 工作流记录
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          # ✅ 修复点：使用 delete_workflow_pattern 并指定自身的文件名（或写 "OpenWrt_Cleanup" 也行）
+          delete_workflow_pattern: "Cleanup.yml"
+          retain_days: 0
+          keep_minimum_runs: 0
