@@ -27,7 +27,7 @@ jobs:
         uses: xcz-ns/delete-older-releases@main
         with:
           repo: ${{ github.repository }}
-          keep_latest: 10
+          keep_latest: 6
           delete_tags: true
         env:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
