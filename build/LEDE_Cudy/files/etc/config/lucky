@@ -1,0 +1,8 @@
+
+config lucky 'lucky'
+	option logger '1'
+	option configdir '/etc/lucky'
+	option safe '/zybin'
+	option port '37602'
+	option enabled '1'
+
