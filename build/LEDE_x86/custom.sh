@@ -29,6 +29,9 @@ rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf package/feeds/luci/luci-app-passwall
 rm -rf lede/feeds/luci/applications/luci-app-filebrowser/
 rm -rf feeds/luci/applications/luci-app-filebrowser-go/
+rm -rf feeds/luci/applications/luci-app-turboacc
+
+curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh --no-sfe
 
 
 # ==============================================================================
