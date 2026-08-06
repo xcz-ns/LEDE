@@ -22,11 +22,7 @@ git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash
 # 移除与自定义包冲突的官方包
 rm -rf feeds/luci/applications/luci-app-openclash
 rm -rf feeds/luci/themes/luci-theme-argon
-rm -rf feeds/luci/applications/luci-app-turboacc
 
-curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh \
-  && sed -i 's/exit 1/continue/g' add_turboacc.sh \
-  && bash add_turboacc.sh --no-sfe
 # ==============================================================================
 # 模块 2: 系统基础配置 & 网络初始化 (UCI 定制)
 # ==============================================================================
@@ -206,19 +202,6 @@ CONFIG_PACKAGE_luci-app-vlmcsd=n
 CONFIG_PACKAGE_luci-app-vsftpd=n
 CONFIG_PACKAGE_luci-app-wol=n
 CONFIG_PACKAGE_luci-app-nlbwmon=n
-EOF
-
-# 启用fw4，禁用fw3
-cat >> .config <<EOF
-CONFIG_PACKAGE_firewall4=y
-CONFIG_PACKAGE_nftables=y
-CONFIG_PACKAGE_kmod-nft-core=y
-CONFIG_PACKAGE_kmod-nft-nat=y
-CONFIG_PACKAGE_kmod-nft-offload=y
-CONFIG_PACKAGE_luci-app-firewall=y
-CONFIG_PACKAGE_firewall=n
-CONFIG_PACKAGE_iptables=n
-CONFIG_PACKAGE_ip6tables=n
 EOF
 
 # ------------------------------------------------------------------------------
