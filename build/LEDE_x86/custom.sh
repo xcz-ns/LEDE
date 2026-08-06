@@ -289,9 +289,9 @@ CONFIG_PACKAGE_kmod-nft-core=y
 CONFIG_PACKAGE_kmod-nft-nat=y
 CONFIG_PACKAGE_kmod-nft-offload=y
 CONFIG_PACKAGE_luci-app-firewall=y
-CONFIG_PACKAGE_firewall
-CONFIG_PACKAGE_iptables
-CONFIG_PACKAGE_ip6tables
+CONFIG_PACKAGE_firewall=n
+CONFIG_PACKAGE_iptables=n
+CONFIG_PACKAGE_ip6tables=n
 EOF
 
 # ------------------------------------------------------------------------------
