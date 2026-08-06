@@ -204,6 +204,19 @@ CONFIG_PACKAGE_luci-app-vsftpd=n
 CONFIG_PACKAGE_luci-app-wol=n
 EOF
 
+# 启用fw4，禁用fw3
+cat >> .config <<EOF
+CONFIG_PACKAGE_firewall4=y
+CONFIG_PACKAGE_nftables=y
+CONFIG_PACKAGE_kmod-nft-core=y
+CONFIG_PACKAGE_kmod-nft-nat=y
+CONFIG_PACKAGE_kmod-nft-offload=y
+CONFIG_PACKAGE_luci-app-firewall=y
+CONFIG_PACKAGE_firewall
+CONFIG_PACKAGE_iptables
+CONFIG_PACKAGE_ip6tables
+EOF
+
 # ------------------------------------------------------------------------------
 # 格式清理与收尾
 # ------------------------------------------------------------------------------
