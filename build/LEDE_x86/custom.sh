@@ -31,8 +31,9 @@ rm -rf lede/feeds/luci/applications/luci-app-filebrowser/
 rm -rf feeds/luci/applications/luci-app-filebrowser-go/
 rm -rf feeds/luci/applications/luci-app-turboacc
 
-curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh --no-sfe
-
+curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh \
+  && sed -i 's/exit 1/continue/g' add_turboacc.sh \
+  && bash add_turboacc.sh --no-sfe
 
 # ==============================================================================
 # 模块 2: 系统基础配置 & 网络初始化 (UCI 定制)
