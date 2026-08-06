@@ -129,6 +129,7 @@ CONFIG_PACKAGE_luci-app-diskman=y            # 磁盘管理
 CONFIG_PACKAGE_luci-app-dockerman=y          # Docker 容器管理
 CONFIG_PACKAGE_luci-app-filebrowser=y
 CONFIG_PACKAGE_luci-app-wireguard=y
+CONFIG_PACKAGE_luci-app-nlbwmon=n
 
 EOF
 

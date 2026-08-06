@@ -202,6 +202,7 @@ CONFIG_PACKAGE_luci-app-qbittorrent=n
 CONFIG_PACKAGE_luci-app-vlmcsd=n
 CONFIG_PACKAGE_luci-app-vsftpd=n
 CONFIG_PACKAGE_luci-app-wol=n
+CONFIG_PACKAGE_luci-app-nlbwmon=n
 EOF
 
 # 启用fw4，禁用fw3
