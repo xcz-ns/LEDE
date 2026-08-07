@@ -42,8 +42,8 @@ jobs:
           repository: ${{ github.repository }}
           # ✅ 修复点：使用 delete_workflow_pattern 并指定目标工作流文件名（或写 "OpenWrt_LEDE Build" 也行）
           delete_workflow_pattern: "OpenWrt_LEDE_Build.yml"
-          retain_days: 1
-          keep_minimum_runs: 4
+          retain_days: 0
+          keep_minimum_runs: 6
 
       # ==========================
       # 清理清理脚本自身的工作流
