@@ -76,41 +76,41 @@ uci commit firewall
 EOF
 
 # OpenClash Meta 内核预集成
-if grep -qE '^(CONFIG_PACKAGE_luci-app-openclash=n|# CONFIG_PACKAGE_luci-app-openclash=)' "${WORKPATH}/$CUSTOM_SH"; then
-    echo "未启用 OpenClash，添加清理残留配置指令"
-    echo 'rm -rf /etc/openclash' >> "$ZZZ"
-else
-    if grep -q "CONFIG_PACKAGE_luci-app-openclash=y" "${WORKPATH}/$CUSTOM_SH"; then
-        arch="arm64" # 硬编码架构为 arm64
-        echo "下载 OpenClash Meta 核心 [$arch]..."
-        
-        mkdir -p "$HOME/clash-core"
-        mkdir -p "$HOME/files/etc/openclash/core"
-        cd "$HOME/clash-core" || exit 1
-
-        # 下载 Core 包 (重试 3 次, 15 秒超时)
-        if wget -q --tries=3 --timeout=15 "https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-$arch.tar.gz"; then
-            echo "下载成功，开始部署..."
-        else
-            echo "错误：内核下载失败，请检查网络！"
-            exit 1
-        fi
-
-        tar -zxvf "clash-linux-$arch.tar.gz"
-        if [[ -f "$HOME/clash-core/clash" ]]; then
-            mv -f "$HOME/clash-core/clash" "$HOME/files/etc/openclash/core/clash_meta"
-            chmod +x "$HOME/files/etc/openclash/core/clash_meta"
-            echo "OpenClash Meta 内核集成成功"
-        else
-            echo "内核解压/部署失败"
-            exit 1
-        fi
-
-        # 清理临时文件
-        cd "$HOME" || exit
-        rm -rf "$HOME/clash-core"
-    fi
-fi
+# if grep -qE '^(CONFIG_PACKAGE_luci-app-openclash=n|# CONFIG_PACKAGE_luci-app-openclash=)' "${WORKPATH}/$CUSTOM_SH"; then
+#     echo "未启用 OpenClash，添加清理残留配置指令"
+#     echo 'rm -rf /etc/openclash' >> "$ZZZ"
+# else
+#     if grep -q "CONFIG_PACKAGE_luci-app-openclash=y" "${WORKPATH}/$CUSTOM_SH"; then
+#         arch="arm64" # 硬编码架构为 arm64
+#         echo "下载 OpenClash Meta 核心 [$arch]..."
+#         
+#         mkdir -p "$HOME/clash-core"
+#         mkdir -p "$HOME/files/etc/openclash/core"
+#         cd "$HOME/clash-core" || exit 1
+# 
+#         # 下载 Core 包 (重试 3 次, 15 秒超时)
+#         if wget -q --tries=3 --timeout=15 "https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-$arch.tar.gz"# ; then
+#             echo "下载成功，开始部署..."
+#         else
+#             echo "错误：内核下载失败，请检查网络！"
+#             exit 1
+#         fi
+# 
+#         tar -zxvf "clash-linux-$arch.tar.gz"
+#         if [[ -f "$HOME/clash-core/clash" ]]; then
+#             mv -f "$HOME/clash-core/clash" "$HOME/files/etc/openclash/core/clash_meta"
+#             chmod +x "$HOME/files/etc/openclash/core/clash_meta"
+#             echo "OpenClash Meta 内核集成成功"
+#         else
+#             echo "内核解压/部署失败"
+#             exit 1
+#         fi
+# 
+#         # 清理临时文件
+#         cd "$HOME" || exit
+#         rm -rf "$HOME/clash-core"
+#     fi
+# fi
 
 # 确保默认设置脚本正确收尾
 cd "$HOME" || exit
