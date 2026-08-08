@@ -1,4 +1,9 @@
 
 config ttyd
-	option command '/bin/login'
+    option command '/bin/login -f root'
+    list client_option 'fontSize=14'
+    list client_option 'fontFamily=Consolas, "Courier New", monospace'
+    list client_option 'theme={"background": "#f6f8fa", "foreground": "#24292e", "cursor": "#044289", "selectionBackground": "#c8c8fa"}'
+    list client_option 'cursorStyle=bar'
+    list client_option 'cursorBlink=true'
 
