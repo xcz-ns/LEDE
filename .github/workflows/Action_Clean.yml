@@ -1,0 +1,180 @@
+name: Action_Clean
+on:
+  workflow_run:
+    workflows:
+      - OpenWrt_Build
+      - OpenWrt_Toolchain_Build
+      - Export_Caches_to_Artifacts
+    types:
+      - completed
+
+  workflow_dispatch:
+    inputs:
+      keep_releases:
+        description: "保留 Release 的数量"
+        required: true
+        default: "6"
+        type: string
+
+      keep_build_runs:
+        description: "保留 Build 成功记录数"
+        required: true
+        default: "6"
+        type: string
+
+      keep_toolchain_runs:
+        description: "保留 Toolchain 成功记录数"
+        required: true
+        default: "2"
+        type: string
+
+      keep_export_runs:
+        description: "保留 Export 成功记录数"
+        required: true
+        default: "2"
+        type: string
+
+      retain_days:
+        description: "保留天数 (0 为不限)"
+        required: true
+        default: "0"
+        type: string
+
+      clean_failed_runs:
+        description: "清空异常记录 (含失败/取消/超时)"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  cleanup:
+    name: 🧹 删除工作流
+    runs-on: ubuntu-22.04
+
+    steps:
+      # ==========================
+      # 1. 删除旧 Release 和 Tag
+      # ==========================
+      - name: 清理旧版 Release (仅在 Build 完成或手动触发时执行)
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.workflow_run.path, 'OpenWrt_Build.yml')
+        uses: xcz-ns/delete-older-releases@main
+        with:
+          repo: ${{ github.repository }}
+          keep_latest: ${{ github.event.inputs.keep_releases || 6 }}
+          delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+
+      # ==========================
+      # 2. 清理 OpenWrt_Build
+      # ==========================
+      - name: 清理 OpenWrt_Build (异常记录 - 仅手动选择)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.clean_failed_runs == 'true'
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          delete_workflow_pattern: "OpenWrt_Build.yml"
+          delete_run_by_conclusion_pattern: "neutral,failure,cancelled,skipped,timed_out"
+          keep_minimum_runs: 0
+          retain_days: 0
+
+      - name: 清理 OpenWrt_Build (自动清空灰色无用记录)
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.workflow_run.path, 'OpenWrt_Build.yml')
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          delete_workflow_pattern: "OpenWrt_Build.yml"
+          delete_run_by_conclusion_pattern: "neutral,cancelled,skipped"
+          keep_minimum_runs: 0
+          retain_days: 0
+
+      - name: 清理 OpenWrt_Build (按配额保留成功记录)
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.workflow_run.path, 'OpenWrt_Build.yml')
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          delete_workflow_pattern: "OpenWrt_Build.yml"
+          delete_run_by_conclusion_pattern: "success"
+          keep_minimum_runs: ${{ github.event.inputs.keep_build_runs || 6 }}
+          retain_days: ${{ github.event.inputs.retain_days || 0 }}
+
+      # ==========================
+      # 3. 清理 OpenWrt_Toolchain_Build
+      # ==========================
+      - name: 清理 OpenWrt_Toolchain_Build (异常记录 - 仅手动选择)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.clean_failed_runs == 'true'
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          delete_workflow_pattern: "OpenWrt_Toolchain_Build.yml"
+          delete_run_by_conclusion_pattern: "neutral,failure,cancelled,skipped,timed_out"
+          keep_minimum_runs: 0
+          retain_days: 0
+
+      - name: 清理 OpenWrt_Toolchain_Build (自动清空灰色无用记录)
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.workflow_run.path, 'OpenWrt_Toolchain_Build.yml')
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          delete_workflow_pattern: "OpenWrt_Toolchain_Build.yml"
+          delete_run_by_conclusion_pattern: "neutral,cancelled,skipped"
+          keep_minimum_runs: 0
+          retain_days: 0
+
+      - name: 清理 OpenWrt_Toolchain_Build (按配额保留成功记录)
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.workflow_run.path, 'OpenWrt_Toolchain_Build.yml')
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          delete_workflow_pattern: "OpenWrt_Toolchain_Build.yml"
+          delete_run_by_conclusion_pattern: "success"
+          keep_minimum_runs: ${{ github.event.inputs.keep_toolchain_runs || 2 }}
+          retain_days: ${{ github.event.inputs.retain_days || 0 }}
+
+      # ==========================
+      # 4. 清理 Export_Caches_to_Artifacts
+      # ==========================
+      - name: 清理 Export_Caches_to_Artifacts (异常记录 - 仅手动选择)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.clean_failed_runs == 'true'
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          delete_workflow_pattern: "Export_Caches_to_Artifacts.yml"
+          delete_run_by_conclusion_pattern: "neutral,failure,cancelled,skipped,timed_out"
+          keep_minimum_runs: 0
+          retain_days: 0
+
+      - name: 清理 Export_Caches_to_Artifacts (自动清空灰色无用记录)
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.workflow_run.path, 'Export_Caches_to_Artifacts.yml')
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          delete_workflow_pattern: "Export_Caches_to_Artifacts.yml"
+          delete_run_by_conclusion_pattern: "neutral,cancelled,skipped"
+          keep_minimum_runs: 0
+          retain_days: 0
+
+      - name: 清理 Export_Caches_to_Artifacts (按配额保留成功记录)
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.workflow_run.path, 'Export_Caches_to_Artifacts.yml')
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          delete_workflow_pattern: "Export_Caches_to_Artifacts.yml"
+          delete_run_by_conclusion_pattern: "success"
+          keep_minimum_runs: ${{ github.event.inputs.keep_export_runs || 2 }}
+          retain_days: ${{ github.event.inputs.retain_days || 0 }}
+
+      # ==========================
+      # 5. 清理清理脚本自身的工作流
+      # ==========================
+      - name: 清理 Action_Clean 自身记录
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          delete_workflow_pattern: "Action_Clean.yml"
+          keep_minimum_runs: 0
+          retain_days: 0

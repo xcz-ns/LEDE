@@ -1,0 +1,209 @@
+name: OpenWrt_Toolchain_Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      MODEL:
+        description: "编译的固件"
+        required: true
+        type: choice
+        default: LEDE_Cudy
+        options:
+          - LEDE_Cudy
+          - LEDE_x86
+      CACHE_BUILD:
+        description: "缓存加速"
+        required: false
+        default: true
+        type: boolean
+
+run-name: ${{ inputs.MODEL }}
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    name: 🔨 编译目标设备 (${{ inputs.MODEL }})
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: ⌨️ 检出代码 - 获取最新的代码库配置状态
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: 🧹 释放磁盘空间 - 清理预装组件释放运行空间
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: false
+
+      - name: 🛠️ 构建编译环境 - 配置系统依赖与固件构建变量
+        run: |
+          # 1. 加载固件变量
+          source "${GITHUB_WORKSPACE}/build/${{ inputs.MODEL }}/settings.ini"
+          echo "REPO_URL=${REPO_URL}" >> $GITHUB_ENV
+          echo "REPO_BRANCH=${REPO_BRANCH}" >> $GITHUB_ENV
+          echo "REPO_COMMIT=${REPO_COMMIT}" >> $GITHUB_ENV
+          
+          # 2. 设置时区与时间
+          sudo ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
+          echo "FILE_TIME=$(date +"%m-%d %H.%M")" >> $GITHUB_ENV
+          
+          # 3. 切换标准官方源
+          sudo bash -c 'cat > /etc/apt/sources.list <<EOF
+          deb http://archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse
+          deb http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse
+          deb http://archive.ubuntu.com/ubuntu/ jammy-backports main restricted universe multiverse
+          deb http://security.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse
+          EOF'
+
+          # 4. 禁用交互提示
+          sudo sed -i 's/#\$nrconf{restart} = '"'"'i'"'"';/$nrconf{restart} = '"'"'a'"'"';/g' /etc/needrestart/needrestart.conf 2>/dev/null || true
+
+          # 5. 清理旧缓存并更新
+          sudo rm -rf /var/lib/apt/lists/*
+          sudo -E apt-get -o Acquire::http::Timeout="30" -o Acquire::Retries="3" update
+
+          # 6. 执行安装
+          sudo -E apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install -y --no-install-recommends \
+            ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache clang cmake cpio curl \
+            device-tree-compiler dos2unix ecj fakeroot file flex gawk gcc-multilib g++ g++-multilib genisoimage gettext git \
+            gnutls-dev gperf grep haveged help2man intltool jq lib32gcc-s1 libc6-dev libc6-dev-i386 libc6-i386 libelf-dev \
+            libfuse-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libncurses5-dev \
+            libncursesw5 libncursesw5-dev libpython3-dev libreadline-dev libssl-dev libtinfo-dev libtool libyaml-dev libz-dev \
+            lld llvm lrzsz msmtp ncurses-doc ninja-build p7zip p7zip-full patch pkgconf python3 python3-docutils python3-pip \
+            python3-ply python3-pyelftools python3-setuptools qemu-utils quilt re2c rsync scons squashfs-tools subversion \
+            swig texinfo uglifyjs upx-ucl unzip uuid-dev vim wget xmlto xxd xsltproc zip zlib1g-dev zstd || true
+          
+          sudo apt-get clean
+
+      - name: 💾 挂载编译磁盘 - 创建虚拟卷合并扩展可用空间
+        run: |
+          root_avail=$(df -BG / | awk 'NR==2{print $4+0}')
+          mnt_avail=$(df -BG /mnt | awk 'NR==2{print $4+0}')
+          
+          sudo truncate -s "$((root_avail - 4))G" /root.img
+          sudo truncate -s "$((mnt_avail - 1))G" /mnt/mnt.img
+          
+          sudo vgcreate builder_vg $(sudo losetup -f --show /root.img) $(sudo losetup -f --show /mnt/mnt.img)
+          sudo lvcreate -n builder_lv -l 100%FREE builder_vg
+          sudo mkfs.ext4 -m 0 /dev/mapper/builder_vg-builder_lv
+          
+          sudo mkdir -p /github-builder
+          sudo mount /dev/mapper/builder_vg-builder_lv /github-builder
+          sudo chown -R "$USER:$USER" /github-builder
+          df -h
+
+      - name: 🌐 克隆源码代码 - 复制 OpenWrt 仓库以供构建使用
+        run: |
+          git clone -b "$REPO_BRANCH" "$REPO_URL" "/github-builder/openwrt"
+          cd "/github-builder/openwrt"
+
+          if [ -n "${REPO_COMMIT}" ]; then
+            git fetch origin "${REPO_COMMIT}" || git fetch --unshallow
+            git checkout "${REPO_COMMIT}"
+          fi
+          
+          TOOLCHAIN_HASH=$(git log --pretty=tformat:'%h' -n1 tools toolchain || echo none)
+          echo "$TOOLCHAIN_HASH" > .toolchain.hash
+
+      - name: ⚡ 编译缓存加速 - 恢复与保存工具链及编译缓存
+        uses: xcz-ns/cachewrtbuild@main
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.CACHE_BUILD == 'true'
+        with:
+          ccache: "true"
+          prefix: "/github-builder/openwrt"
+          mixkey: ${{ github.event.inputs.MODEL }}
+
+      - name: 🔧 动态生成配置 - 更新软件源并下载依赖包
+        run: |
+          cd "/github-builder/openwrt"
+
+          printf "%-10s %-6s %s\n" "大小" "类型" "目录/文件"
+          printf "%-10s %-6s %s\n" "----------" "------" "----------------------------------------"
+
+          {
+            du -ah --max-depth=1 --exclude=build_dir --exclude=bin . 2>/dev/null
+            du -ah --max-depth=1 ./build_dir 2>/dev/null
+            du -ah --max-depth=1 ./bin 2>/dev/null
+          } | awk '
+          $2 != "." {
+              name = $2
+              # 快速判断是否为目录
+              if (system("test -d \"" name "\"") == 0) {
+                  flag = "0"
+                  label = "[DIR]"
+              } else {
+                  flag = "1"
+                  label = "[FILE]"
+              }
+              print flag "|" $1 "|" label "|" name
+          }
+          ' | sort -t'|' -k1,1n -k2,2hr | awk -F'|' '{printf "%-10s %-6s %s\n", $2, $3, $4}'
+          
+          sed -i 's/#src-git helloworld/src-git helloworld/g' ./feeds.conf.default
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          
+          echo "根据选择的设备动态生成 .config 基础配置..."
+          if [ "${{ inputs.MODEL }}" == "LEDE_Cudy" ]; then
+            cat <<EOF > .config
+          CONFIG_TARGET_mediatek=y
+          CONFIG_TARGET_mediatek_filogic=y
+          CONFIG_TARGET_mediatek_filogic_DEVICE_cudy_tr3000-mod=y
+          CONFIG_DEVEL=y
+          CONFIG_CCACHE=y
+          EOF
+          elif [ "${{ inputs.MODEL }}" == "LEDE_x86" ]; then
+            cat <<EOF > .config
+          CONFIG_TARGET_x86=y
+          CONFIG_TARGET_x86_64=y
+          CONFIG_TARGET_x86_64_Generic=y
+          CONFIG_DEVEL=y
+          CONFIG_CCACHE=y
+          EOF
+          fi
+          
+          make defconfig
+          make download -j8
+          find dl -size -1024c -exec rm -f {} \;
+
+      - name: 🔨 执行固件编译 - 开始多线程固件编译
+        run: |
+          cd "/github-builder/openwrt"
+          make -j$(nproc) || make -j1 || make -j1 V=s
+          
+          printf "%-10s %-6s %s\n" "大小" "类型" "目录/文件"
+          printf "%-10s %-6s %s\n" "----------" "------" "----------------------------------------"
+
+          {
+            du -ah --max-depth=1 --exclude=build_dir --exclude=bin . 2>/dev/null
+            du -ah --max-depth=1 ./build_dir 2>/dev/null
+            du -ah --max-depth=1 ./bin 2>/dev/null
+          } | awk '
+          $2 != "." {
+              name = $2
+              # 快速判断是否为目录
+              if (system("test -d \"" name "\"") == 0) {
+                  flag = "0"
+                  label = "[DIR]"
+              } else {
+                  flag = "1"
+                  label = "[FILE]"
+              }
+              print flag "|" $1 "|" label "|" name
+          }
+          ' | sort -t'|' -k1,1n -k2,2hr | awk -F'|' '{printf "%-10s %-6s %s\n", $2, $3, $4}'
+
+      - name: 📦 上传编译产物 - 归档并发布 OpenWrt 固件文件
+        uses: actions/upload-artifact@node24
+        with:
+          name: ${{ inputs.MODEL }}_OpenWrt
+          path: /github-builder/openwrt/bin/

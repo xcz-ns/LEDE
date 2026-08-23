@@ -1,0 +1,125 @@
+name: Export_Caches_to_Artifacts
+
+on:
+  workflow_run:
+    workflows: ["OpenWrt_Toolchain_Build"]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      MODEL:
+        description: 缓存标识
+        required: true
+        type: choice
+        default: LEDE_Cudy
+        options:
+          - LEDE_Cudy
+          - LEDE_x86
+      RESTORE_CACHE:
+        description: 尝试恢复缓存
+        default: true
+        type: boolean
+
+run-name: 导出缓存 ${{ inputs.MODEL || github.event.workflow_run.display_title }}
+
+env:
+  TZ: Asia/Shanghai
+  REPO_URL: https://github.com/coolsnowwolf/lede.git
+  REPO_BRANCH: master
+  BUILD_ROOT: /github-builder/openwrt
+
+jobs:
+  export-cache:
+    runs-on: ubuntu-22.04
+    # 仅在上游工作流成功执行时运行；被取消或失败时跳过
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: 🏷️ 解析目标 MODEL 标识
+        id: parse_model
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TARGET_MODEL="${{ inputs.MODEL }}"
+            RESTORE="true"
+          else
+            # 获取上游工作流的运行名称 (如: "构建 LEDE_Cudy")
+            RUN_TITLE="${{ github.event.workflow_run.display_title }}"
+            echo "上游工作流名称: ${RUN_TITLE}"
+            
+            # 截取空格后面的模型后缀 (提取出 LEDE_Cudy 或 LEDE_x86)
+            TARGET_MODEL="$RUN_TITLE"
+            RESTORE="true"
+          fi
+          
+          if [ -z "$TARGET_MODEL" ]; then
+            echo "❌ 未能正确解析出 MODEL 名称！"
+            exit 1
+          fi
+          
+          echo "TARGET_MODEL=${TARGET_MODEL}" >> "$GITHUB_ENV"
+          echo "RESTORE_CACHE=${RESTORE}" >> "$GITHUB_ENV"
+          echo "✅ 最终使用的 MODEL: ${TARGET_MODEL}"
+
+      - name: 🌐 初始化源码目录 - 满足缓存插件目录结构依赖
+        run: |
+          sudo mkdir -p /github-builder/openwrt
+          sudo chown -R $USER:$USER /github-builder
+          mkdir -p ${{ env.BUILD_ROOT }}
+          git clone -b $REPO_BRANCH $REPO_URL ${{ env.BUILD_ROOT }}
+          cd ${{ env.BUILD_ROOT }}
+          echo $(git log --pretty=tformat:'%h' -n1 tools toolchain || echo none) > .toolchain.hash
+
+      - name: ⚡ 恢复编译缓存 - 拉取对应型号已保存工具链缓存
+        uses: xcz-ns/cachewrtbuild@main
+        if: ${{ env.RESTORE_CACHE == 'true' }}
+        with:
+          ccache: "true"
+          prefix: ${{ env.BUILD_ROOT }}
+          mixkey: ${{ env.TARGET_MODEL }}
+
+      - name: 📂 提取缓存文件 - 筛选插件有效缓存目录进行迁移
+        run: |
+          sudo mkdir -p /cache_export
+          sudo chown -R $USER:$USER /cache_export
+          cd ${{ env.BUILD_ROOT }}
+          
+          # 匹配 staging_dir 下 host* / tool* 目录
+          find staging_dir -maxdepth 1 -type d \( -name "host*" -o -name "tool*" \) | while read -r dir; do
+            rsync -rRl "$dir" /cache_export/ 2>/dev/null
+          done
+
+          # 复制 .ccache
+          if [ -d .ccache ]; then
+            rsync -rRl .ccache /cache_export/ 2>/dev/null
+          fi
+
+          cd /cache_export
+          tar -I "zstd -1 -T0" -cf ./cache_export_${{ env.TARGET_MODEL }}.tzst staging_dir .ccache
+
+          # 1. 打印表头及一级目录/文件的大小
+          printf "%-10s %-6s %s\n" "大小" "类型" "一级目录/文件"
+          printf "%-10s %-6s %s\n" "----------" "------" "----------------------------------------"
+
+          TARGET="/cache_export"
+          du -ah --max-depth=1 "$TARGET" | awk -v base="$TARGET" '
+          $2 != base {
+              name = substr($2, length(base)+2)
+              cmd = "stat -c \"%F\" \"" $2 "\""
+              cmd | getline type
+              close(cmd)
+              if (type ~ /directory/) {
+                  flag = "0"
+                  label = "[DIR]"
+              } else {
+                  flag = "1"
+                  label = "[FILE]"
+              }
+              print flag "|" $1 "|" label "|" name
+          }
+          ' | sort -t'|' -k1,1n -k2,2hr | awk -F'|' '{printf "%-10s %-6s %s\n", $2, $3, $4}'
+
+      - name: 📤 上传缓存制品 - 将筛选后的缓存打包为制品
+        uses: actions/upload-artifact@main
+        with:
+          name: Cache_${{ env.TARGET_MODEL }}
+          path: /cache_export/cache_export_${{ env.TARGET_MODEL }}.tzst
+          retention-days: 7

@@ -1,0 +1,252 @@
+name: Sync Releases to WebDAV
+
+on:
+  workflow_run:
+    workflows: ["OpenWrt_Build"]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '手动选择同步目标'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - x86
+          - Cudy
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  # 判断需要运行哪些分类
+  check-trigger:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    outputs:
+      run_x86: ${{ steps.check.outputs.run_x86 }}
+      run_cudy: ${{ steps.check.outputs.run_cudy }}
+    steps:
+      - name: 解析触发类型
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SELECTED="${{ inputs.target }}"
+            echo "手动触发，选择目标: $SELECTED"
+            if [ "$SELECTED" = "all" ] || [ "$SELECTED" = "x86" ]; then
+              echo "run_x86=true" >> $GITHUB_OUTPUT
+            else
+              echo "run_x86=false" >> $GITHUB_OUTPUT
+            fi
+            if [ "$SELECTED" = "all" ] || [ "$SELECTED" = "Cudy" ]; then
+              echo "run_cudy=true" >> $GITHUB_OUTPUT
+            else
+              echo "run_cudy=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            # 从上游工作流的 display_title 或 head_commit 中判断构建对象
+            UPSTREAM_TITLE="${{ github.event.workflow_run.display_title }}"
+            echo "上游工作流触发: $UPSTREAM_TITLE"
+
+            # 判断是否包含 x86
+            if echo "$UPSTREAM_TITLE" | grep -qi "x86"; then
+              echo "run_x86=true" >> $GITHUB_OUTPUT
+            else
+              echo "run_x86=false" >> $GITHUB_OUTPUT
+            fi
+
+            # 判断是否包含 Cudy
+            if echo "$UPSTREAM_TITLE" | grep -qi "Cudy"; then
+              echo "run_cudy=true" >> $GITHUB_OUTPUT
+            else
+              echo "run_cudy=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  # 同步 x86 固件
+  sync-x86:
+    name: Sync LEDE x86 Releases
+    needs: check-trigger
+    if: needs.check-trigger.outputs.run_x86 == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 查找最新 x86 Release 并下载文件
+        id: fetch_release
+        run: |
+          set -e
+          REPO="xcz-ns/LEDE"
+          KEYWORD="x86"
+          echo "🔍 检索包含 [$KEYWORD] 的最新 Release..."
+
+          RELEASES_JSON=$(curl -sSL -H "Accept: application/vnd.github+json" \
+            -H "User-Agent: GitHub-Actions-Sync" \
+            "https://api.github.com/repos/${REPO}/releases?per_page=30")
+
+          TARGET_RELEASE=$(echo "$RELEASES_JSON" | jq -c --arg kw "$KEYWORD" '[.[] | select((.name | test($kw; "i")) or (.tag_name | test($kw; "i")))] | .[0]')
+
+          if [ "$TARGET_RELEASE" = "null" ] || [ -z "$TARGET_RELEASE" ]; then
+            echo "❌ 未找到包含 '$KEYWORD' 的 Release！"
+            exit 1
+          fi
+
+          echo "✅ 匹配到最新 Release: $(echo "$TARGET_RELEASE" | jq -r '.name')"
+          DOWNLOAD_DIR="./downloads_x86"
+          mkdir -p "$DOWNLOAD_DIR"
+
+          echo "$TARGET_RELEASE" | jq -c '.assets[]' | while read -r asset; do
+            FILE_NAME=$(echo "$asset" | jq -r '.name')
+            DOWNLOAD_URL=$(echo "$asset" | jq -r '.browser_download_url')
+            echo "⬇️ 下载: $FILE_NAME"
+            curl -sSL -L -C - -o "${DOWNLOAD_DIR}/${FILE_NAME}" "$DOWNLOAD_URL"
+          done
+          echo "download_dir=$DOWNLOAD_DIR" >> $GITHUB_OUTPUT
+
+      - name: 上传至 WebDAV
+        env:
+          WEBDAV_USER: ${{ secrets.WEBDAV_USER }}
+          WEBDAV_PASS: ${{ secrets.WEBDAV_PASS }}
+        run: |
+          set -e
+          DOWNLOAD_DIR="${{ steps.fetch_release.outputs.download_dir }}"
+          WEBDAV_BASE_URL="https://zos.xczns.top:5006/NVME%20%E2%85%A0/Backup/OpenWrt/Github%20Release/x86"
+
+          curl -k -s -X MKCOL -u "${WEBDAV_USER}:${WEBDAV_PASS}" "$WEBDAV_BASE_URL/" > /dev/null 2>&1 || true
+
+          for file_path in "$DOWNLOAD_DIR"/*; do
+            [ -e "$file_path" ] || continue
+            FILE_NAME=$(basename "$file_path")
+            ENCODED_FILE_NAME=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$FILE_NAME")
+            
+            echo "🚀 正在上传: $FILE_NAME"
+            HTTP_CODE=$(curl -k -s -S -X PUT \
+              -u "${WEBDAV_USER}:${WEBDAV_PASS}" \
+              -T "$file_path" \
+              --write-out "%{http_code}" \
+              --output /dev/null \
+              --retry 3 \
+              --retry-delay 5 \
+              "${WEBDAV_BASE_URL}/${ENCODED_FILE_NAME}")
+
+            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+              echo "🎉 $FILE_NAME 上传成功!"
+            else
+              echo "❌ $FILE_NAME 上传失败，状态码: $HTTP_CODE"
+              exit 1
+            fi
+          done
+
+  # 同步 Cudy 固件
+  sync-cudy:
+    name: Sync LEDE Cudy Releases
+    needs: check-trigger
+    if: needs.check-trigger.outputs.run_cudy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 查找最新 Cudy Release 并下载文件
+        id: fetch_release
+        run: |
+          set -e
+          REPO="xcz-ns/LEDE"
+          KEYWORD="Cudy"
+          echo "🔍 检索包含 [$KEYWORD] 的最新 Release..."
+
+          RELEASES_JSON=$(curl -sSL -H "Accept: application/vnd.github+json" \
+            -H "User-Agent: GitHub-Actions-Sync" \
+            "https://api.github.com/repos/${REPO}/releases?per_page=30")
+
+          TARGET_RELEASE=$(echo "$RELEASES_JSON" | jq -c --arg kw "$KEYWORD" '[.[] | select((.name | test($kw; "i")) or (.tag_name | test($kw; "i")))] | .[0]')
+
+          if [ "$TARGET_RELEASE" = "null" ] || [ -z "$TARGET_RELEASE" ]; then
+            echo "❌ 未找到包含 '$KEYWORD' 的 Release！"
+            exit 1
+          fi
+
+          echo "✅ 匹配到最新 Release: $(echo "$TARGET_RELEASE" | jq -r '.name')"
+          DOWNLOAD_DIR="./downloads_cudy"
+          mkdir -p "$DOWNLOAD_DIR"
+
+          echo "$TARGET_RELEASE" | jq -c '.assets[]' | while read -r asset; do
+            FILE_NAME=$(echo "$asset" | jq -r '.name')
+            DOWNLOAD_URL=$(echo "$asset" | jq -r '.browser_download_url')
+            echo "⬇️ 下载: $FILE_NAME"
+            curl -sSL -L -C - -o "${DOWNLOAD_DIR}/${FILE_NAME}" "$DOWNLOAD_URL"
+          done
+          echo "download_dir=$DOWNLOAD_DIR" >> $GITHUB_OUTPUT
+
+      - name: 上传至 WebDAV
+        env:
+          WEBDAV_USER: ${{ secrets.WEBDAV_USER }}
+          WEBDAV_PASS: ${{ secrets.WEBDAV_PASS }}
+        run: |
+          set -e
+          DOWNLOAD_DIR="${{ steps.fetch_release.outputs.download_dir }}"
+          WEBDAV_BASE_URL="https://zos.xczns.top:5006/NVME%20%E2%85%A0/Backup/OpenWrt/Github%20Release/CudyTR3000"
+
+          curl -k -s -X MKCOL -u "${WEBDAV_USER}:${WEBDAV_PASS}" "$WEBDAV_BASE_URL/" > /dev/null 2>&1 || true
+
+          for file_path in "$DOWNLOAD_DIR"/*; do
+            [ -e "$file_path" ] || continue
+            FILE_NAME=$(basename "$file_path")
+            ENCODED_FILE_NAME=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$FILE_NAME")
+            
+            echo "🚀 正在上传: $FILE_NAME"
+            HTTP_CODE=$(curl -k -s -S -X PUT \
+              -u "${WEBDAV_USER}:${WEBDAV_PASS}" \
+              -T "$file_path" \
+              --write-out "%{http_code}" \
+              --output /dev/null \
+              --retry 3 \
+              --retry-delay 5 \
+              "${WEBDAV_BASE_URL}/${ENCODED_FILE_NAME}")
+
+            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+              echo "🎉 $FILE_NAME 上传成功!"
+            else
+              echo "❌ $FILE_NAME 上传失败，状态码: $HTTP_CODE"
+              exit 1
+            fi
+          done
+
+  # 清理当前工作流历史记录
+  cleanup-this-workflow:
+    name: Cleanup Current Workflow Runs
+    runs-on: ubuntu-latest
+    needs: [sync-x86, sync-cudy]
+    if: always()
+    steps:
+      - name: 删除当前工作流的历史记录
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const currentRunId = context.runId;
+            const { data: currentRun } = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: currentRunId
+            });
+
+            const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: currentRun.workflow_id,
+              per_page: 100
+            });
+
+            for (const run of runs) {
+              if (run.id !== currentRunId) {
+                try {
+                  console.log(`🗑️ 正在删除记录: ID ${run.id} (${run.created_at})`);
+                  await github.rest.actions.deleteWorkflowRun({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    run_id: run.id
+                  });
+                } catch (error) {
+                  console.log(`⚠️ 删除 ID ${run.id} 失败: ${error.message}`);
+                }
+              }
+            }
