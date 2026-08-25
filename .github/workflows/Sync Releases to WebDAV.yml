@@ -218,7 +218,7 @@ jobs:
     if: always()
     steps:
       - name: 删除当前工作流的历史记录
-        uses: actions/github-script@v7
+        uses: actions/github-script@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
