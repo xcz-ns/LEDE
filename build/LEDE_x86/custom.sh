@@ -14,7 +14,7 @@ cat feeds.conf.default
 
 git clone --depth 1 -b 18.06 https://github.com/xiaozhuai/luci-app-filebrowser package/luci-app-filebrowser
 git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
-git clone --depth 1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
+git clone --depth 1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
 git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash && mv package/openclash/luci-app-openclash package/ && rm -rf package/openclash
 git clone --depth 1 https://github.com/lisaac/luci-app-dockerman package/luci-app-dockerman
 
