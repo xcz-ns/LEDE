@@ -6,29 +6,27 @@
 
 # 切换 LEDE LuCI 源
 sed -i 's/^\(src-git luci \).*/\1https:\/\/github.com\/coolsnowwolf\/luci.git;master/' feeds.conf.default
-sed -i 's/#src-git helloworld/src-git helloworld/g' ./feeds.conf.default
+sed -i 's/#src-git helloworld/src-git helloworld/g' feeds.conf.default
+sed -i '/^#/d' feeds.conf.default
 
 # 打印默认 feeds 配置
 cat feeds.conf.default
 
-git clone https://github.com/OldCoding/luci-app-filebrowser package/luci-app-filebrowser
-git clone https://github.com/gdy666/luci-app-lucky.git package/lucky > /dev/null
-git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon > /dev/null
+git clone --depth 1 https://github.com/OldCoding/luci-app-filebrowser package/luci-app-filebrowser
+git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
+git clone --depth 1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
 git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash && mv package/openclash/luci-app-openclash package/ && rm -rf package/openclash
-git clone --depth 1 https://github.com/lisaac/luci-app-dockerman package/luci-app-dockerman > /dev/null
+git clone --depth 1 https://github.com/lisaac/luci-app-dockerman package/luci-app-dockerman
 
 # 更新 feeds
-./scripts/feeds update -a > /dev/null
+./scripts/feeds update -a
 
-rm -rf feeds/luci/applications/luci-app-openclash
-rm -rf feeds/luci/themes/luci-theme-argon
-rm -rf feeds/luci/themes/luci-theme-design
-rm -rf feeds/luci/applications/luci-app-filebrowser
-rm -rf feeds/luci/applications/luci-app-filebrowser-go
-rm -rf feeds/luci/applications/luci-app-dockerman
+# 删除冲突软件
+rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-filebrowser,luci-app-filebrowser-go,luci-app-dockerman}
+rm -rf feeds/luci/themes/{luci-theme-argon,luci-theme-design}
 
 # 安装 feeds
-./scripts/feeds install -a -f > /dev/null
+./scripts/feeds install -a -f
 
 # ==============================================================================
 # 模块 2: 系统基础配置 & 网络初始化 (UCI 定制)
@@ -478,5 +476,6 @@ EOF
 
 # 移除行首多余缩进与空格
 sed -i 's/^[ \t]*//g' ./.config
+
 # 返回工作根目录
 cd "$BUILDER_DIR/openwrt" || exit

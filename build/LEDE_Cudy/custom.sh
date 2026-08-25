@@ -4,33 +4,27 @@
 # 模块 1: 软件源管理 & 第三方软件包拉取
 # ==============================================================================
 
-# 1. 切换 LEDE LuCI 源
+# 切换 LEDE LuCI 源
 sed -i 's/^\(src-git luci \).*/\1https:\/\/github.com\/coolsnowwolf\/luci.git;master/' feeds.conf.default
 sed -i 's/#src-git helloworld/src-git helloworld/g' ./feeds.conf.default
+sed -i '/^#/d' feeds.conf.default
 
 # 打印默认 feeds 配置
 cat feeds.conf.default
 
-# 2. 拉取Lucky
-git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky > /dev/null
+# 下载第三方软件包
+git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
+git clone --depth 1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
+git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash && mv package/openclash/luci-app-openclash package/ && rm -rf package/openclash package/luci-app-openclash/root/{etc/openclash/GeoSite.dat,usr/share/openclash/ui/{zashboard,metacubexd}}
 
-# 3. 拉取适配 master 分支 argon 主题
-git clone --depth 1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon > /dev/null
+# 更新、清理并安装 feeds
+./scripts/feeds update -a
 
-# 4. 移除 openclash GeoSite 及 ui
-git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash && \
-mv package/openclash/luci-app-openclash package/ && \
-rm -rf package/openclash package/luci-app-openclash/root/etc/openclash/GeoSite.dat package/luci-app-openclash/root/usr/share/openclash/ui/{zashboard,metacubexd}
-
-# 5. 更新、清理并安装 feeds
-./scripts/feeds update -a > /dev/null
-
-# 移除与自定义包冲突的官方包
+# 删除冲突软件
 rm -rf feeds/luci/applications/luci-app-openclash
 rm -rf feeds/luci/themes/luci-theme-argon
 
-./scripts/feeds install -a -f > /dev/null
-
+./scripts/feeds install -a -f
 
 # ==============================================================================
 # 模块 2: 系统基础配置
