@@ -16,6 +16,7 @@ on:
           - all
           - x86
           - Cudy
+          - R3S
 
 permissions:
   actions: write
@@ -29,6 +30,7 @@ jobs:
     outputs:
       run_x86: ${{ steps.check.outputs.run_x86 }}
       run_cudy: ${{ steps.check.outputs.run_cudy }}
+      run_r3s: ${{ steps.check.outputs.run_r3s }}
     steps:
       - name: 解析触发类型
         id: check
@@ -45,6 +47,11 @@ jobs:
               echo "run_cudy=true" >> $GITHUB_OUTPUT
             else
               echo "run_cudy=false" >> $GITHUB_OUTPUT
+            fi
+            if [ "$SELECTED" = "all" ] || [ "$SELECTED" = "R3S" ]; then
+              echo "run_r3s=true" >> $GITHUB_OUTPUT
+            else
+              echo "run_r3s=false" >> $GITHUB_OUTPUT
             fi
           else
             # 从上游工作流的 display_title 或 head_commit 中判断构建对象
@@ -63,6 +70,13 @@ jobs:
               echo "run_cudy=true" >> $GITHUB_OUTPUT
             else
               echo "run_cudy=false" >> $GITHUB_OUTPUT
+            fi
+
+            # 判断是否包含 R3S
+            if echo "$UPSTREAM_TITLE" | grep -qi "R3S"; then
+              echo "run_r3s=true" >> $GITHUB_OUTPUT
+            else
+              echo "run_r3s=false" >> $GITHUB_OUTPUT
             fi
           fi
 
@@ -210,11 +224,83 @@ jobs:
             fi
           done
 
+  # 同步 R3S 固件
+  sync-r3s:
+    name: Sync LEDE R3S Releases
+    needs: check-trigger
+    if: needs.check-trigger.outputs.run_r3s == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 查找最新 R3S Release 并下载文件
+        id: fetch_release
+        run: |
+          set -e
+          REPO="xcz-ns/LEDE"
+          KEYWORD="R3S"
+          echo "🔍 检索包含 [$KEYWORD] 的最新 Release..."
+
+          RELEASES_JSON=$(curl -sSL -H "Accept: application/vnd.github+json" \
+            -H "User-Agent: GitHub-Actions-Sync" \
+            "https://api.github.com/repos/${REPO}/releases?per_page=30")
+
+          TARGET_RELEASE=$(echo "$RELEASES_JSON" | jq -c --arg kw "$KEYWORD" '[.[] | select((.name | test($kw; "i")) or (.tag_name | test($kw; "i")))] | .[0]')
+
+          if [ "$TARGET_RELEASE" = "null" ] || [ -z "$TARGET_RELEASE" ]; then
+            echo "❌ 未找到包含 '$KEYWORD' 的 Release！"
+            exit 1
+          fi
+
+          echo "✅ 匹配到最新 Release: $(echo "$TARGET_RELEASE" | jq -r '.name')"
+          DOWNLOAD_DIR="./downloads_r3s"
+          mkdir -p "$DOWNLOAD_DIR"
+
+          echo "$TARGET_RELEASE" | jq -c '.assets[]' | while read -r asset; do
+            FILE_NAME=$(echo "$asset" | jq -r '.name')
+            DOWNLOAD_URL=$(echo "$asset" | jq -r '.browser_download_url')
+            echo "⬇️ 下载: $FILE_NAME"
+            curl -sSL -L -C - -o "${DOWNLOAD_DIR}/${FILE_NAME}" "$DOWNLOAD_URL"
+          done
+          echo "download_dir=$DOWNLOAD_DIR" >> $GITHUB_OUTPUT
+
+      - name: 上传至 WebDAV
+        env:
+          WEBDAV_USER: ${{ secrets.WEBDAV_USER }}
+          WEBDAV_PASS: ${{ secrets.WEBDAV_PASS }}
+        run: |
+          set -e
+          DOWNLOAD_DIR="${{ steps.fetch_release.outputs.download_dir }}"
+          WEBDAV_BASE_URL="https://zos.xczns.top:5006/NVME%20%E2%85%A0/Backup/OpenWrt/Github%20Release/NanoPiR3S"
+
+          curl -k -s -X MKCOL -u "${WEBDAV_USER}:${WEBDAV_PASS}" "$WEBDAV_BASE_URL/" > /dev/null 2>&1 || true
+
+          for file_path in "$DOWNLOAD_DIR"/*; do
+            [ -e "$file_path" ] || continue
+            FILE_NAME=$(basename "$file_path")
+            ENCODED_FILE_NAME=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$FILE_NAME")
+            
+            echo "🚀 正在上传: $FILE_NAME"
+            HTTP_CODE=$(curl -k -s -S -X PUT \
+              -u "${WEBDAV_USER}:${WEBDAV_PASS}" \
+              -T "$file_path" \
+              --write-out "%{http_code}" \
+              --output /dev/null \
+              --retry 3 \
+              --retry-delay 5 \
+              "${WEBDAV_BASE_URL}/${ENCODED_FILE_NAME}")
+
+            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+              echo "🎉 $FILE_NAME 上传成功!"
+            else
+              echo "❌ $FILE_NAME 上传失败，状态码: $HTTP_CODE"
+              exit 1
+            fi
+          done
+
   # 清理当前工作流历史记录
   cleanup-this-workflow:
     name: Cleanup Current Workflow Runs
     runs-on: ubuntu-latest
-    needs: [sync-x86, sync-cudy]
+    needs: [sync-x86, sync-cudy, sync-r3s]
     if: always()
     steps:
       - name: 删除当前工作流的历史记录

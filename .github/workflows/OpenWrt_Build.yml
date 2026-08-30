@@ -11,6 +11,7 @@ on:
         options:
           - LEDE_Cudy
           - LEDE_x86
+          - LEDE_R3S
 
       CACHE_BUILD:
         description: "缓存加速"

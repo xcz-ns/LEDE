@@ -13,25 +13,25 @@ on:
       keep_releases:
         description: "保留 Release 的数量"
         required: true
-        default: "6"
+        default: "9"
         type: string
 
       keep_build_runs:
         description: "保留 Build 成功记录数"
         required: true
-        default: "6"
+        default: "9"
         type: string
 
       keep_toolchain_runs:
         description: "保留 Toolchain 成功记录数"
         required: true
-        default: "2"
+        default: "3"
         type: string
 
       keep_export_runs:
         description: "保留 Export 成功记录数"
         required: true
-        default: "2"
+        default: "3"
         type: string
 
       retain_days:
@@ -64,7 +64,7 @@ jobs:
         uses: xcz-ns/delete-older-releases@main
         with:
           repo: ${{ github.repository }}
-          keep_latest: ${{ github.event.inputs.keep_releases || 6 }}
+          keep_latest: ${{ github.event.inputs.keep_releases || 9 }}
           delete_tags: true
         env:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
@@ -99,7 +99,7 @@ jobs:
           token: ${{ github.token }}
           delete_workflow_pattern: "OpenWrt_Build.yml"
           delete_run_by_conclusion_pattern: "success"
-          keep_minimum_runs: ${{ github.event.inputs.keep_build_runs || 6 }}
+          keep_minimum_runs: ${{ github.event.inputs.keep_build_runs || 9 }}
           retain_days: ${{ github.event.inputs.retain_days || 0 }}
 
       # ==========================
@@ -132,7 +132,7 @@ jobs:
           token: ${{ github.token }}
           delete_workflow_pattern: "OpenWrt_Toolchain_Build.yml"
           delete_run_by_conclusion_pattern: "success"
-          keep_minimum_runs: ${{ github.event.inputs.keep_toolchain_runs || 2 }}
+          keep_minimum_runs: ${{ github.event.inputs.keep_toolchain_runs || 3 }}
           retain_days: ${{ github.event.inputs.retain_days || 0 }}
 
       # ==========================
@@ -165,7 +165,7 @@ jobs:
           token: ${{ github.token }}
           delete_workflow_pattern: "Export_Caches_to_Artifacts.yml"
           delete_run_by_conclusion_pattern: "success"
-          keep_minimum_runs: ${{ github.event.inputs.keep_export_runs || 2 }}
+          keep_minimum_runs: ${{ github.event.inputs.keep_export_runs || 3 }}
           retain_days: ${{ github.event.inputs.retain_days || 0 }}
 
       # ==========================

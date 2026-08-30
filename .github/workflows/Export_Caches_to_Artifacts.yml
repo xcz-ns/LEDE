@@ -15,6 +15,7 @@ on:
         options:
           - LEDE_Cudy
           - LEDE_x86
+          - LEDE_R3S
       RESTORE_CACHE:
         description: 尝试恢复缓存
         default: true
@@ -45,7 +46,7 @@ jobs:
             RUN_TITLE="${{ github.event.workflow_run.display_title }}"
             echo "上游工作流名称: ${RUN_TITLE}"
             
-            # 截取空格后面的模型后缀 (提取出 LEDE_Cudy 或 LEDE_x86)
+            # 提取上游名称中的目标型号
             TARGET_MODEL="$RUN_TITLE"
             RESTORE="true"
           fi
