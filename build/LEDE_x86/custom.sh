@@ -6,7 +6,6 @@
 
 # 切换 LEDE LuCI 源
 sed -i 's/^\(src-git luci \).*/\1https:\/\/github.com\/coolsnowwolf\/luci.git;master/' feeds.conf.default
-sed -i 's/#src-git helloworld/src-git helloworld/g' feeds.conf.default
 sed -i '/^#/d' feeds.conf.default
 
 # 打印默认 feeds 配置
