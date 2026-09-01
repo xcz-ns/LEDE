@@ -196,6 +196,16 @@ CONFIG_PACKAGE_luci-app-upnp=n
 CONFIG_PACKAGE_ddns-scripts_aliyun=n
 CONFIG_PACKAGE_ddns-scripts_dnspod=n
 CONFIG_PACKAGE_v2ray-geoip=n
+CONFIG_PACKAGE_mihomo=n
+CONFIG_PACKAGE_luci-app-ssr-plus=n
+CONFIG_PACKAGE_luci-app-ssr-plus_Iptables_Transparent_Proxy=n
+CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_NONE_Client=n
+CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_NONE_Server=n
+CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_NONE_V2RAY=n
+CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ChinaDNS_NG=n
+CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Http_Proxy=n
+CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Mihomo=n
+CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Libev_Client=n
 EOF
 
 # 移除行首多余缩进与空格
