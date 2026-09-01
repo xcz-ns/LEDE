@@ -195,6 +195,7 @@ CONFIG_PACKAGE_luci-app-ssr-plus=n
 CONFIG_PACKAGE_luci-app-upnp=n
 CONFIG_PACKAGE_ddns-scripts_aliyun=n
 CONFIG_PACKAGE_ddns-scripts_dnspod=n
+CONFIG_PACKAGE_v2ray-geoip=n
 EOF
 
 # 移除行首多余缩进与空格
