@@ -293,6 +293,7 @@ CONFIG_PACKAGE_luci-app-wireguard=y
 CONFIG_PACKAGE_luci-app-uhttpd=y
 CONFIG_PACKAGE_luci-app-dockerman=y
 CONFIG_PACKAGE_docker-compose=y
+CONFIG_PACKAGE_luci-app-upnp=y
 EOF
 
 # ------------------------------------------------------------------------------
@@ -467,7 +468,6 @@ CONFIG_PACKAGE_luci-app-wol=n
 CONFIG_PACKAGE_luci-app-qbittorrent=n
 CONFIG_PACKAGE_luci-app-nlbwmon=n
 CONFIG_PACKAGE_luci-app-ssr-plus=n
-CONFIG_PACKAGE_luci-app-upnp=n
 CONFIG_PACKAGE_ddns-scripts_aliyun=n
 CONFIG_PACKAGE_ddns-scripts_dnspod=n
 CONFIG_PACKAGE_strace=n
