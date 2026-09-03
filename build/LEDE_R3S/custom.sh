@@ -27,8 +27,6 @@ rm -rf feeds/luci/themes/{luci-theme-argon,luci-theme-design}
 
 ./scripts/feeds install -a -f
 
-sed -i 's/\$(call opkg,\$(TARGET_DIR)) install/\$(call opkg,\$(TARGET_DIR)) install --force-overwrite/g' package/Makefile
-
 # ==============================================================================
 # 模块 2: 系统基础配置
 # ==============================================================================
