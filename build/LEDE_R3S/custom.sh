@@ -35,11 +35,17 @@ rm -rf feeds/luci/themes/{luci-theme-argon,luci-theme-design}
 sed -i 's/localtime[[:space:]]*=[[:space:]]*os.date()/localtime = os.date("%Y年%m月%d日") .. " " .. translate(os.date("%A")) .. " " .. os.date("%X")/g' package/lean/autocore/files/*/index.htm
 
 # 定义配置文件路径
-NET="package/base-files/files/bin/config_generate"
 ZZZ="package/lean/default-settings/files/zzz-default-settings"
 
-# 修改后台地址
-sed -i 's#192.168.1.1#192.168.0.1#g' "$NET"
+# 修改后台地址和网口
+cat >> "$ZZZ" << 'EOF'
+uci set network.lan.ifname='eth1'
+uci set network.lan.ipaddr='192.168.0.1'
+uci set network.wan.ifname='eth0'
+uci set network.wan6.ifname='eth0'
+uci delete network.docker
+uci commit network
+EOF
 
 # 增加个性名称
 sed -i "s/LEDE /Built on $(TZ=UTC-8 date "+%Y.%m.%d") By XCZNS /g" "$ZZZ"
@@ -124,10 +130,6 @@ ls -lh "$DIR/lucky"
 cd "$BUILDER_DIR/openwrt" || exit
 sed -i '/exit 0/d' "$ZZZ"
 echo "exit 0" >> "$ZZZ"
-
-echo ""
-cat "$NET"
-echo ""
 
 echo ""
 cat "$ZZZ"
