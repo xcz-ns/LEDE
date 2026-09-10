@@ -35,7 +35,7 @@ uci set system.@system[0].hostname='CudyTR3000'
 uci set luci.main.mediaurlbase=/luci-static/argon
 uci set network.lan.ipaddr='192.168.10.1'
 uci set network.lan.netmask='255.255.255.0'
-echo -e "zybin980329\nzybin980329" | passwd root
+sed -i "s#^root:[^:]*:#root:\$5\$7ceNgrs8ZgrGVxv8\$UFWOtsaXR3KC2k0PeXFff.z47etH3dJZcpBv9zDpE08:#" /etc/shadow
 
 uci commit
 EOF
