@@ -117,7 +117,6 @@ CONFIG_PACKAGE_luci-app-diskman=y
 CONFIG_PACKAGE_luci-app-wireguard=y
 CONFIG_PACKAGE_luci-app-uhttpd=y
 CONFIG_PACKAGE_luci-app-upnp=y
-CONFIG_PACKAGE_luci-app-turboacc-mtk=y
 
 # --- 网络代理与虚拟网关 ---
 CONFIG_PACKAGE_luci-app-openclash=y
