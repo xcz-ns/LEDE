@@ -88,15 +88,13 @@ CONFIG_CCACHE=y
 CONFIG_PACKAGE_dnsmasq_full_dhcpv6=y
 
 # ------------------------------------------------------------------------------
-# 【mt76开源无线驱动 关键配置】
-# filogic.mk设备定义自带kmod-mt7915e，这里只要确保mtwifi闭源驱动全部禁用
+# 【mtwifi 闭源WiFi驱动 关键配置】
 # ------------------------------------------------------------------------------
-# 彻底禁用mtwifi闭源驱动，防止冲突
-CONFIG_PACKAGE_kmod-mt_wifi=n
-CONFIG_PACKAGE_mtwifi-cfg=n
-CONFIG_PACKAGE_wifi-dats=n
-CONFIG_PACKAGE_luci-app-mtwifi-cfg=n
-CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=n
+CONFIG_PACKAGE_kmod-mt_wifi=y
+CONFIG_PACKAGE_mtwifi-cfg=y
+CONFIG_PACKAGE_wifi-dats=y
+CONFIG_PACKAGE_luci-app-mtwifi-cfg=y
+CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y
 
 # PPE硬件转发加速
 CONFIG_PACKAGE_kmod-mtk-ppe=y
@@ -113,6 +111,7 @@ CONFIG_PACKAGE_luci-app-diskman=y
 CONFIG_PACKAGE_luci-app-wireguard=y
 CONFIG_PACKAGE_luci-app-uhttpd=y
 CONFIG_PACKAGE_luci-app-upnp=y
+CONFIG_PACKAGE_luci-app-turboacc-mtk=y
 
 # --- 网络代理与虚拟网关 ---
 CONFIG_PACKAGE_luci-app-openclash=y
