@@ -6,6 +6,8 @@
 
 # 下载第三方软件包
 git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
+git clone --depth 1 https://github.com/papagaye744/luci-theme-design.git package/luci-theme-design
+git clone --depth 1 https://github.com/gngpp/luci-app-design-config.git package/luci-app-design-config
 git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
 sed -i 's#LUCI_DEPENDS:=+USE_APK:wget-any +!USE_APK:wget +jsonfilter#LUCI_DEPENDS:=+wget-ssl +jsonfilter#' package/luci-theme-argon/Makefile
 git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash && mv package/openclash/luci-app-openclash package/ && rm -rf package/openclash package/luci-app-openclash/root/{etc/openclash/GeoSite.dat,usr/share/openclash/ui/{zashboard,metacubexd}}
@@ -16,6 +18,7 @@ git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash
 # 删除冲突软件
 rm -rf feeds/luci/applications/luci-app-openclash
 rm -rf feeds/luci/themes/luci-theme-argon
+rm -rf feeds/luci/themes/luci-theme-design
 
 ./scripts/feeds install -a -f
 
@@ -105,7 +108,9 @@ CONFIG_PACKAGE_kmod-mtk-ppe=y
 # ------------------------------------------------------------------------------
 # --- Web 界面与美化 ---
 CONFIG_PACKAGE_luci-theme-argon=y
+CONFIG_PACKAGE_luci-theme-design=y
 CONFIG_PACKAGE_luci-app-argon-config=y
+CONFIG_PACKAGE_luci-app-design-config=y
 CONFIG_PACKAGE_luci-app-ttyd=y
 CONFIG_PACKAGE_luci-app-lucky=y
 CONFIG_PACKAGE_luci-app-diskman=y
