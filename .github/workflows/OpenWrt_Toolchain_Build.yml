@@ -12,6 +12,7 @@ on:
           - LEDE_Cudy
           - LEDE_x86
           - LEDE_R3S
+          - Immortalwrt_Cudy
       CACHE_BUILD:
         description: "缓存加速"
         required: false
@@ -175,6 +176,14 @@ jobs:
           CONFIG_TARGET_rockchip=y
           CONFIG_TARGET_rockchip_armv8=y
           CONFIG_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r3s=y
+          CONFIG_DEVEL=y
+          CONFIG_CCACHE=y
+          EOF
+          elif [ "${{ inputs.MODEL }}" = "Immortalwrt_Cudy" ]; then
+            cat <<EOF > .config
+          CONFIG_TARGET_mediatek=y
+          CONFIG_TARGET_mediatek_filogic=y
+          CONFIG_TARGET_mediatek_filogic_DEVICE_cudy_tr3000-v1-ubootmod=y
           CONFIG_DEVEL=y
           CONFIG_CCACHE=y
           EOF
