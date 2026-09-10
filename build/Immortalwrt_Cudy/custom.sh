@@ -7,6 +7,7 @@
 # 下载第三方软件包
 git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
 git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
+sed -i 's#LUCI_DEPENDS:=+USE_APK:wget-any +!USE_APK:wget +jsonfilter#LUCI_DEPENDS:=+wget-ssl +jsonfilter#' package/luci-theme-argon/Makefile
 git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash && mv package/openclash/luci-app-openclash package/ && rm -rf package/openclash package/luci-app-openclash/root/{etc/openclash/GeoSite.dat,usr/share/openclash/ui/{zashboard,metacubexd}}
 
 # 更新、清理并安装 feeds
