@@ -1,0 +1,7 @@
+
+config ttyd
+    option command '/bin/login -f root'
+    list client_option 'fontSize=14'
+    list client_option 'fontFamily=Consolas, "Courier New", monospace'
+    
+

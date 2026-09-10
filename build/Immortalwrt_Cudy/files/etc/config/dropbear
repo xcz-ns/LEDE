@@ -1,0 +1,5 @@
+
+config dropbear
+	option Port '10002'
+	option PasswordAuth 'off'
+

@@ -12,6 +12,7 @@ on:
           - LEDE_Cudy
           - LEDE_x86
           - LEDE_R3S
+          - Immortalwrt_Cudy
 
       CACHE_BUILD:
         description: "缓存加速"
