@@ -34,6 +34,9 @@ rm -rf feeds/luci/themes/{luci-theme-argon,luci-theme-design}
 # 模块 2: 系统基础配置
 # ==============================================================================
 
+# 修改内核为 6.12
+sed -i 's/KERNEL_PATCHVER:=6.18/KERNEL_PATCHVER:=6.12/' target/linux/rockchip/Makefile
+
 # 修改默认时间格式
 sed -i 's/localtime[[:space:]]*=[[:space:]]*os.date()/localtime = os.date("%Y年%m月%d日") .. " " .. translate(os.date("%A")) .. " " .. os.date("%X")/g' package/lean/autocore/files/*/index.htm
 
