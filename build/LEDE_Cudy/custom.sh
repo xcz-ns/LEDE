@@ -13,7 +13,7 @@ cat feeds.conf.default
 
 # 下载第三方软件包
 git clone --depth 1 https://github.com/kenzok8/small-package small-package
-cp -rf small-package/{luci-app-ramfree,luci-app-shutdown} package/
+cp -rf small-package/{luci-app-ramfree,luci-app-poweroff} package/
 
 git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
 git clone --depth 1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
@@ -23,7 +23,7 @@ git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash
 ./scripts/feeds update -a
 
 # 删除冲突软件
-rm -rf feeds/luci/applications/luci-app-openclash
+rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-ramfree,luci-app-poweroff}
 rm -rf feeds/luci/themes/luci-theme-argon
 
 ./scripts/feeds install -a -f
@@ -118,7 +118,7 @@ CONFIG_PACKAGE_luci-app-wireguard=y
 CONFIG_PACKAGE_luci-app-uhttpd=y
 CONFIG_PACKAGE_luci-app-upnp=y
 CONFIG_PACKAGE_luci-app-ramfree=y
-CONFIG_PACKAGE_luci-app-shutdown=y
+CONFIG_PACKAGE_luci-app-poweroff=y
 
 # --- 网络代理与虚拟网关 ---
 CONFIG_PACKAGE_luci-app-openclash=y

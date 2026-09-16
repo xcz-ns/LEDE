@@ -13,7 +13,7 @@ cat feeds.conf.default
 
 # 下载第三方软件包
 git clone --depth 1 https://github.com/kenzok8/small-package small-package
-cp -rf small-package/{luci-app-ramfree,luci-app-shutdown} package/
+cp -rf small-package/{luci-app-ramfree,luci-app-poweroff} package/
 
 git clone --depth 1 https://github.com/OldCoding/luci-app-filebrowser package/luci-app-filebrowser
 git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
@@ -25,7 +25,7 @@ git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash
 ./scripts/feeds update -a
 
 # 删除冲突软件
-rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-filebrowser,luci-app-filebrowser-go,luci-app-dockerman}
+rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-filebrowser,luci-app-filebrowser-go,luci-app-dockerman,luci-app-ramfree,luci-app-poweroff}
 rm -rf feeds/luci/themes/{luci-theme-argon,luci-theme-design}
 
 ./scripts/feeds install -a -f
