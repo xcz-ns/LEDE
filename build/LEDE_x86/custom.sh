@@ -296,7 +296,7 @@ CONFIG_PACKAGE_luci-app-dockerman=y
 CONFIG_PACKAGE_docker-compose=y
 CONFIG_PACKAGE_luci-app-upnp=y
 CONFIG_PACKAGE_luci-app-ramfree=y
-CONFIG_PACKAGE_luci-app-shutdown=y
+CONFIG_PACKAGE_luci-app-poweroff=y
 EOF
 
 # ------------------------------------------------------------------------------

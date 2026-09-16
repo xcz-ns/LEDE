@@ -189,7 +189,7 @@ CONFIG_PACKAGE_luci-i18n-samba4-zh-cn=y
 CONFIG_PACKAGE_samba4-server=y
 CONFIG_PACKAGE_samba4-libs=y
 CONFIG_PACKAGE_luci-app-ramfree=y
-CONFIG_PACKAGE_luci-app-shutdown=y
+CONFIG_PACKAGE_luci-app-poweroff=y
 # ------------------------------------------------------------------------------
 # 系统工具、Shell 与排错诊断
 # ------------------------------------------------------------------------------
