@@ -11,6 +11,9 @@ sed -i '/^#/d' feeds.conf.default
 # 打印默认 feeds 配置
 cat feeds.conf.default
 
+git clone --depth 1 https://github.com/kenzok8/small-package small-package
+cp -rf small-package/{luci-app-ramfree,luci-app-poweroff} package/
+
 git clone --depth 1 https://github.com/OldCoding/luci-app-filebrowser package/luci-app-filebrowser
 git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
 git clone --depth 1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
@@ -21,7 +24,7 @@ git clone --depth 1 https://github.com/lisaac/luci-app-dockerman package/luci-ap
 ./scripts/feeds update -a
 
 # 删除冲突软件
-rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-filebrowser,luci-app-filebrowser-go,luci-app-dockerman}
+rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-filebrowser,luci-app-filebrowser-go,luci-app-dockerman,luci-app-ramfree,luci-app-poweroff}
 rm -rf feeds/luci/themes/{luci-theme-argon,luci-theme-design}
 
 # 安装 feeds
@@ -273,8 +276,6 @@ CONFIG_TARGET_IMAGES_PAD=y
 CONFIG_QCOW2_IMAGES=y
 CONFIG_VHDX_IMAGES=y
 CONFIG_VMDK_IMAGES=y
-CONFIG_SDK=y
-CONFIG_MAKE_TOOLCHAIN=y
 CONFIG_DEVEL=y
 CONFIG_CCACHE=y
 EOF
@@ -294,6 +295,8 @@ CONFIG_PACKAGE_luci-app-uhttpd=y
 CONFIG_PACKAGE_luci-app-dockerman=y
 CONFIG_PACKAGE_docker-compose=y
 CONFIG_PACKAGE_luci-app-upnp=y
+CONFIG_PACKAGE_luci-app-ramfree=y
+CONFIG_PACKAGE_luci-app-shutdown=y
 EOF
 
 # ------------------------------------------------------------------------------

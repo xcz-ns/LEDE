@@ -12,6 +12,9 @@ sed -i '/^#/d' feeds.conf.default
 cat feeds.conf.default
 
 # 下载第三方软件包
+git clone --depth 1 https://github.com/kenzok8/small-package small-package
+cp -rf small-package/{luci-app-ramfree,luci-app-poweroff} package/
+
 git clone --depth 1 https://github.com/OldCoding/luci-app-filebrowser package/luci-app-filebrowser
 git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
 git clone --depth 1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
@@ -22,7 +25,7 @@ git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash
 ./scripts/feeds update -a
 
 # 删除冲突软件
-rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-filebrowser,luci-app-filebrowser-go,luci-app-dockerman}
+rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-filebrowser,luci-app-filebrowser-go,luci-app-dockerman,luci-app-ramfree,luci-app-poweroff}
 rm -rf feeds/luci/themes/{luci-theme-argon,luci-theme-design}
 
 ./scripts/feeds install -a -f
@@ -150,8 +153,6 @@ CONFIG_TARGET_rockchip=y
 CONFIG_TARGET_rockchip_armv8=y
 CONFIG_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r3s=y
 CONFIG_TARGET_ROOTFS_PARTSIZE=2048
-CONFIG_SDK=y
-CONFIG_MAKE_TOOLCHAIN=y
 CONFIG_TARGET_ROOTFS_TARGZ=y
 CONFIG_TARGET_ROOTFS_EXT4FS=y
 CONFIG_DEVEL=y
@@ -187,7 +188,8 @@ CONFIG_PACKAGE_luci-app-samba4=y
 CONFIG_PACKAGE_luci-i18n-samba4-zh-cn=y
 CONFIG_PACKAGE_samba4-server=y
 CONFIG_PACKAGE_samba4-libs=y
-
+CONFIG_PACKAGE_luci-app-ramfree=y
+CONFIG_PACKAGE_luci-app-shutdown=y
 # ------------------------------------------------------------------------------
 # 系统工具、Shell 与排错诊断
 # ------------------------------------------------------------------------------
