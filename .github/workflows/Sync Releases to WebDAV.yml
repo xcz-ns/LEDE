@@ -222,7 +222,7 @@ jobs:
   cleanup-this-workflow:
     name: Cleanup Current Workflow Runs
     runs-on: ubuntu-latest
-    needs: [sync-lede-x86, sync-lede-cudy, sync-lede-r3s, sync-immortalwrt-cudy]
+    needs: [sync-lede-x86, sync-lede-cudy, sync-lede-r3s]
     if: always()
     steps:
       - name: 删除当前工作流的历史记录
