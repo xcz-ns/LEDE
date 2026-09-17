@@ -16,7 +16,6 @@ on:
           - LEDE_Cudy
           - LEDE_x86
           - LEDE_R3S
-          - Immortalwrt_Cudy
       RESTORE_CACHE:
         description: 尝试恢复缓存
         default: true

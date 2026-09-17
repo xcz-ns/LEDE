@@ -1,8 +1,0 @@
-
-config lucky 'lucky'
-	option logger '1'
-	option configdir '/etc/lucky'
-	option port '37602'
-	option safe '/lucky'
-	option enabled '0'
-
