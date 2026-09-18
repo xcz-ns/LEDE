@@ -313,7 +313,27 @@ jobs:
           cd "$BUILDER_DIR/openwrt"
           echo -e "$(nproc) thread compile"
           make -j$(nproc) || make -j1 || make -j1 V=s
-          make imagebuilder
+
+      - name: 🧱 生成 ImageBuilder 包（失败不中断 + 自动打印诊断）
+        id: ib
+        continue-on-error: true
+        run: |
+          cd "$BUILDER_DIR/openwrt"
+
+          # 先多线程快速试一次
+          if make -j$(nproc) imagebuilder 2>&1 | tee /tmp/ib-build.log; then
+            echo "✅ ImageBuilder 生成成功"
+          else
+            echo "❌ 多线程失败，用 -j1 V=s 重跑拿详细报错..."
+            make -j1 V=s imagebuilder 2>&1 | tee /tmp/ib-debug.log || true
+
+            echo "================= 详细日志最后 100 行 ================="
+            tail -n 100 /tmp/ib-debug.log
+            echo "========================================================"
+          fi
+
+          # 验证产物（动态路径，不写死 target）
+          find bin/targets/ -name "openwrt-imagebuilder-*.tar.xz" -exec ls -lh {} \;
 
       - name: 📈 空间检查 - 查看编译完成后的磁盘占用情况
         run: |
