@@ -160,6 +160,7 @@ CONFIG_TARGET_ROOTFS_TARGZ=y
 CONFIG_TARGET_ROOTFS_EXT4FS=y
 CONFIG_DEVEL=y
 CONFIG_CCACHE=y
+CONFIG_IB=y
 
 # ------------------------------------------------------------------------------
 # 核心网络基础组件
