@@ -313,28 +313,6 @@ jobs:
           cd "$BUILDER_DIR/openwrt"
           echo -e "$(nproc) thread compile"
           make -j$(nproc) || make -j1 || make -j1 V=s
-
-      - name: 🧱 生成 ImageBuilder 包（单线程 + 失败自动诊断）
-        id: ib
-        continue-on-error: true
-        run: |
-          cd "$BUILDER_DIR/openwrt"
-          set -o pipefail
-      
-          # 单线程跑（不加 -j，日志有序，失败原因一目了然）
-          if make imagebuilder 2>&1 | tee /tmp/ib-build.log; then
-            echo "✅ ImageBuilder 生成成功"
-          else
-            echo "❌ 失败，用 -j1 V=s 重跑拿详细报错..."
-            make -j1 V=s imagebuilder 2>&1 | tee /tmp/ib-debug.log || true
-      
-            echo "================= 详细日志最后 100 行 ================="
-            tail -n 100 /tmp/ib-debug.log
-            cat /tmp/ib-debug.log
-            echo "========================================================"
-          fi
-      
-          # 验证产物（动态路径，不写死 target）
           find bin/targets/ -name "openwrt-imagebuilder-*.tar.xz" -exec ls -lh {} \;
       
       - name: 📈 空间检查 - 查看编译完成后的磁盘占用情况
@@ -371,7 +349,7 @@ jobs:
           find "$BUILDER_DIR/openwrt/bin/targets/" -type f \( -name "*.buildinfo" -o -name "*.manifest" \) -exec cp {} ./artifact/buildinfo/ \; || true
           
           echo "开始提取固件包 (支持 .itb, .bin, .tar, .img, rootfs等)..."
-          find "$BUILDER_DIR/openwrt/bin/targets/" -type f \( -name "*.itb" -o -name "*sysupgrade.tar*" -o -name "*.bin" -o -name "*.img*" -o -name "*rootfs*" \) -exec cp {} ./artifact/firmware/ \; || true
+          find "$BUILDER_DIR/openwrt/bin/targets/" -type f \( -name "*.itb" -o -name "*sysupgrade.tar*" -o -name "*.bin" -o -name "*imagebuilder*" -o -name "*.img*" -o -name "*rootfs*" \) -exec cp {} ./artifact/firmware/ \; || true
 
           echo "开始提取 SDK 包..."
           find "$BUILDER_DIR/openwrt/bin/targets/" -type f -name "*sdk*" -exec cp {} ./artifact/sdk/ \; || true
