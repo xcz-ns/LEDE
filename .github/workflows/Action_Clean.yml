@@ -11,9 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       keep_releases:
-        description: "保留 Release 的数量"
+        description: "每个设备保留 Release 的数量"
         required: true
-        default: "9"
+        default: "3"
         type: string
 
       keep_build_runs:
@@ -57,17 +57,55 @@ jobs:
 
     steps:
       # ==========================
-      # 1. 删除旧 Release 和 Tag
+      # 1. 删除旧 Release 和 Tag（按设备分别保留）
       # ==========================
-      - name: 清理旧版 Release (仅在 Build 完成或手动触发时执行)
+      - name: 清理旧版 Release (按设备各保留最新 N 个)
         if: github.event_name == 'workflow_dispatch' || contains(github.event.workflow_run.path, 'OpenWrt_Build.yml')
-        uses: xcz-ns/delete-older-releases@main
-        with:
-          repo: ${{ github.repository }}
-          keep_latest: ${{ github.event.inputs.keep_releases || 9 }}
-          delete_tags: true
         env:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # 设备列表（需与 OpenWrt_Build.yml 中的设备保持一致）
+          DEVICES="LEDE_Cudy LEDE_R3S LEDE_x86"
+          KEEP="${{ github.event.inputs.keep_releases || 3 }}"
+
+          echo "========================================"
+          echo "按设备清理 Release，每设备保留最新 $KEEP 个"
+          echo "========================================"
+
+          # tag 格式：YYYYMMDD-HHMM-设备名
+          # 按设备分别筛选，每个设备保留最新 KEEP 个，删除更早的
+          for DEVICE in $DEVICES; do
+            echo "--- 处理设备：$DEVICE ---"
+
+            OLD_TAGS=$(
+              gh release list \
+                --repo "$REPO" \
+                --limit 100 \
+                --json tagName,publishedAt \
+                -q 'sort_by(.publishedAt) | reverse | .[].tagName' \
+                | grep -E "-${DEVICE}$" \
+                | tail -n +$((KEEP + 1)) || true
+            )
+
+            if [ -z "$OLD_TAGS" ]; then
+              echo "  无需清理的旧 Release。"
+              continue
+            fi
+
+            for TAG in $OLD_TAGS; do
+              echo "  删除旧 Release：$TAG"
+              gh release delete "$TAG" \
+                --repo "$REPO" \
+                --cleanup-tag \
+                --yes \
+                || true
+            done
+          done
+
+          echo "========================================"
+          echo "Release 清理完成"
+          echo "========================================"
 
       # ==========================
       # 2. 清理 OpenWrt_Build
