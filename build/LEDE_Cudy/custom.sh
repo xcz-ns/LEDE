@@ -17,7 +17,9 @@ cp -rf small-package/{luci-app-ramfree,luci-app-poweroff} package/
 
 git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
 git clone --depth 1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
-git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash && mv package/openclash/luci-app-openclash package/ && rm -rf package/openclash package/luci-app-openclash/root/{etc/openclash/GeoSite.dat,usr/share/openclash/ui/{zashboard,metacubexd}}
+git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash \
+    && mv package/openclash/luci-app-openclash package/ \
+    && rm -rf package/openclash package/luci-app-openclash/root/{etc/openclash/GeoSite.dat,usr/share/openclash/ui/{zashboard,metacubexd}}
 
 # 更新、清理并安装 feeds
 ./scripts/feeds update -a
@@ -42,31 +44,75 @@ ZZZ="package/lean/default-settings/files/zzz-default-settings"
 # 增加个性名称
 sed -i "s/LEDE /Built on $(TZ=UTC-8 date "+%Y.%m.%d") By XCZNS /g" "$ZZZ"
 
-# 设置主机名、设置argon主题
+# 设置主机名、设置 argon 主题
 cat >> "$ZZZ" <<EOF
 uci set system.@system[0].hostname='CudyTR3000'
 uci set luci.main.mediaurlbase=/luci-static/argon
 uci commit
 EOF
 
-# 下载并配置 lucky 二进制文件
+# ------------------------------------------------------------------------------
+# 二进制组件预集成 (Lucky)
+# ------------------------------------------------------------------------------
 BASE="https://release.66666.host"
 DIR="$BUILDER_DIR/openwrt/files/usr/bin"
 ARCH="arm64"
 
 mkdir -p "$DIR"
-echo "[1/2] 正在解析最新版本信息..."
-VER=$(curl -sL "$BASE/" | grep -o 'href="\./v[^/]*' | cut -d/ -f2 | sort -rV | head -1)
-[ -z "$VER" ] && { echo "❌ 获取版本失败"; exit 1; }
-SUB=$(curl -sL "$BASE/$VER/" | grep -o 'href="\./[^/]*' | cut -d/ -f2 | grep -i '^[0-9].*lucky' | head -1)
-[ -z "$SUB" ] && { echo "❌ 未找到 lucky 子目录"; exit 1; }
-PKG=$(curl -sL "$BASE/$VER/$SUB/" | grep -o 'href="[^"]*' | cut -d'"' -f2 | grep -i "Linux.*$ARCH.*\.tar\.gz" | head -1)
-[ -z "$PKG" ] && { echo "❌ 未找到 $ARCH 包"; exit 1; }
+
+echo "----------------------------------------------------"
+echo "[1/1] 正在解析 Lucky 版本信息..."
+
+# 解析最新版本号
+VER=$(curl -sL "$BASE/" \
+    | grep -o 'href="\./v[^/]*' \
+    | cut -d/ -f2 \
+    | sort -rV \
+    | head -1)
+
+[ -z "$VER" ] && { 
+    echo "❌ 获取版本失败"
+    exit 1
+}
+
+# 解析 lucky 子目录
+SUB=$(curl -sL "$BASE/$VER/" \
+    | grep -o 'href="\./[^/]*' \
+    | cut -d/ -f2 \
+    | grep -i '^[0-9].*lucky' \
+    | head -1)
+
+[ -z "$SUB" ] && { 
+    echo "❌ 未找到 lucky 子目录"
+    exit 1
+}
+
+# 匹配目标架构安装包
+PKG=$(curl -sL "$BASE/$VER/$SUB/" \
+    | grep -o 'href="[^"]*' \
+    | cut -d'"' -f2 \
+    | grep -i "Linux.*$ARCH.*\.tar\.gz" \
+    | head -1)
+
+[ -z "$PKG" ] && { 
+    echo "❌ 未找到 $ARCH 包"
+    exit 1
+}
+
 echo "✅ 成功匹配: $VER / $PKG"
-echo "[2/2] 开始下载并提取二进制..."
-curl -sL --connect-timeout 10 "$BASE/$VER/$SUB/$PKG" | tar -xz -C "$DIR" lucky || { echo "❌ 下载或解压失败"; exit 1; }
-echo "🎉 完成：已成功提取到 $DIR/lucky"
-ls -lh "$DIR/lucky"
+echo "开始下载并提取二进制..."
+
+if curl -sL --connect-timeout 10 "$BASE/$VER/$SUB/$PKG" \
+    | tar -xz -C "$DIR" lucky; then
+
+    chmod +x "$DIR/lucky"
+
+    echo "🎉 完成：已成功提取到 $DIR/lucky"
+    ls -lh "$DIR/lucky"
+else
+    echo "❌ 下载或解压失败"
+    exit 1
+fi
 
 # 确保默认设置脚本正确收尾
 cd "$BUILDER_DIR/openwrt" || exit

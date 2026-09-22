@@ -17,7 +17,9 @@ cp -rf small-package/{luci-app-ramfree,luci-app-poweroff} package/
 git clone --depth 1 https://github.com/OldCoding/luci-app-filebrowser package/luci-app-filebrowser
 git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
 git clone --depth 1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
-git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash && mv package/openclash/luci-app-openclash package/ && rm -rf package/openclash
+git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash \
+    && mv package/openclash/luci-app-openclash package/ \
+    && rm -rf package/openclash
 git clone --depth 1 https://github.com/lisaac/luci-app-dockerman package/luci-app-dockerman
 
 # 更新 feeds
@@ -44,7 +46,7 @@ ZZZ="package/lean/default-settings/files/zzz-default-settings"
 # 增加个性名称
 sed -i "s/LEDE /Built on $(TZ=UTC-8 date "+%Y.%m.%d") By XCZNS /g" "$ZZZ"
 
-# 设置主机名、设置argon主题
+# 设置主机名、设置 argon 主题
 cat >> "$ZZZ" <<EOF
 uci set system.@system[0].hostname='OpenWrt'
 uci set luci.main.mediaurlbase=/luci-static/argon
@@ -181,69 +183,139 @@ uci commit network
 uci commit firewall
 EOF
 
-# OpenClash Meta 内核预集成
+# ------------------------------------------------------------------------------
+# 二进制组件预集成 (OpenClash / Lucky / Filebrowser)
+# ------------------------------------------------------------------------------
 CONF="${WORKPATH}/${CUSTOM_SH}"
-CORE_DIR="${BUILDER_DIR}/openwrt/files/etc/openclash/core"
-URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-amd64.tar.gz"
+BIN_DIR="$BUILDER_DIR/openwrt/files/usr/bin"
+CORE_DIR="$BUILDER_DIR/openwrt/files/etc/openclash/core"
+ARCH_AMD64="amd64"
+ARCH_X86_64="x86_64"
+
+mkdir -p "$BIN_DIR" "$CORE_DIR"
+
+# 1. OpenClash Meta 内核预集成
+OPENCLASH_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-${ARCH_AMD64}.tar.gz"
 
 if grep -q "^CONFIG_PACKAGE_luci-app-openclash=y" "$CONF"; then
-    echo "开始下载并部署 OpenClash Meta 核心..."
-    mkdir -p "$CORE_DIR"
-    if wget -qO- --tries=3 --timeout=15 "$URL" | tar xz -C "$CORE_DIR"; then
+    echo "----------------------------------------------------"
+    echo "[1/3] 正在解析 OpenClash Meta 版本信息..."
+    echo "✅ 成功匹配: $OPENCLASH_URL"
+    echo "开始下载并提取二进制..."
+
+    if wget -qO- --tries=3 --timeout=15 "$OPENCLASH_URL" \
+        | tar -xz -C "$CORE_DIR"; then
+
         mv -f "$CORE_DIR/clash" "$CORE_DIR/clash_meta"
         chmod +x "$CORE_DIR/clash_meta"
-        echo "✅ OpenClash Meta 内核集成成功,文件信息如下："
+
+        echo "🎉 完成：已成功提取到 $CORE_DIR/clash_meta"
         ls -lh "$CORE_DIR/clash_meta"
     else
-        echo "❌ 错误：内核下载或解压失败！"
+        echo "❌ 下载或解压失败"
         exit 1
     fi
 else
-    echo "未启用 OpenClash,添加清理残留配置指令..."
+    echo "未启用 OpenClash，添加清理残留配置指令..."
     echo 'rm -rf /etc/openclash' >> "$ZZZ"
 fi
 
-# 下载并配置 lucky 二进制文件
-BASE="https://release.66666.host"
-DIR="$BUILDER_DIR/openwrt/files/usr/bin"
-ARCH="x86_64"
+# 2. 下载并配置 Filebrowser 二进制文件
+FB_REPO="filebrowser/filebrowser"
+FB_ARCH_KEY="linux-${ARCH_AMD64}-filebrowser.tar.gz"
 
-mkdir -p "$DIR"
-echo "[1/2] 正在解析最新版本信息..."
-VER=$(curl -sL "$BASE/" | grep -o 'href="\./v[^/]*' | cut -d/ -f2 | sort -rV | head -1)
-[ -z "$VER" ] && { echo "❌ 获取版本失败"; exit 1; }
-SUB=$(curl -sL "$BASE/$VER/" | grep -o 'href="\./[^/]*' | cut -d/ -f2 | grep -i '^[0-9].*lucky' | head -1)
-[ -z "$SUB" ] && { echo "❌ 未找到 lucky 子目录"; exit 1; }
-PKG=$(curl -sL "$BASE/$VER/$SUB/" | grep -o 'href="[^"]*' | cut -d'"' -f2 | grep -i "Linux.*$ARCH.*\.tar\.gz" | head -1)
-[ -z "$PKG" ] && { echo "❌ 未找到 Linux_$ARCH 包"; exit 1; }
-echo "✅ 成功匹配: $VER / $PKG"
-echo "[2/2] 开始下载并提取二进制..."
-curl -sL --connect-timeout 10 "$BASE/$VER/$SUB/$PKG" | tar -xz -C "$DIR" lucky || { echo "❌ 下载或解压失败"; exit 1; }
-echo "🎉 完成：已成功提取到 $DIR/lucky"
-chmod +x "$DIR/lucky"
-ls -lh "$DIR/lucky"
+echo "----------------------------------------------------"
+echo "[2/3] 正在解析 Filebrowser 版本信息..."
 
-# 下载并配置 filebrowser 二进制文件
-REPO="filebrowser/filebrowser"
-DIR="$BUILDER_DIR/openwrt/files/usr/bin"
-ARCH_KEY="linux-amd64-filebrowser.tar.gz"
+# 优先通过 GitHub API 解析下载地址
+FB_URL=$(curl -sL "https://api.github.com/repos/$FB_REPO/releases/latest" \
+    | grep -o "https://[^\"]*${FB_ARCH_KEY}" \
+    | head -n 1)
 
-mkdir -p "$DIR"
-echo "[1/2] 正在获取 GitHub 最新 Release 信息..."
-DOWNLOAD_URL=$(curl -sL "https://api.github.com/repos/$REPO/releases/latest" \
-  | grep -o "https://[^\"]*${ARCH_KEY}" \
-  | head -n 1)
-if [ -z "$DOWNLOAD_URL" ]; then
-  LATEST_TAG=$(curl -sIL -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest" | sed 's#.*/##')
-  [ -n "$LATEST_TAG" ] && DOWNLOAD_URL="https://github.com/$REPO/releases/download/$LATEST_TAG/linux-amd64-filebrowser.tar.gz"
+# API 达到调用限制时的回退解析方案
+if [ -z "$FB_URL" ]; then
+    LATEST_TAG=$(curl -sIL -o /dev/null -w '%{url_effective}' "https://github.com/$FB_REPO/releases/latest" \
+        | sed 's#.*/##')
+
+    [ -n "$LATEST_TAG" ] && FB_URL="https://github.com/$FB_REPO/releases/download/$LATEST_TAG/linux-${ARCH_AMD64}-filebrowser.tar.gz"
 fi
-[ -z "$DOWNLOAD_URL" ] && { echo "❌ 获取下载链接失败"; exit 1; }
-echo "✅ 匹配到下载地址: $DOWNLOAD_URL"
-echo "[2/2] 开始下载并提取二进制..."
-curl -sL --connect-timeout 15 "$DOWNLOAD_URL" | tar -xz -C "$DIR" filebrowser || { echo "❌ 下载或解压失败"; exit 1; }
-chmod +x "$DIR/filebrowser"
-echo "🎉 完成：已成功提取到 $DIR/filebrowser"
-ls -lh "$DIR/filebrowser"
+
+[ -z "$FB_URL" ] && { 
+    echo "❌ 获取版本失败"
+    exit 1
+}
+
+echo "✅ 成功匹配: $FB_URL"
+echo "开始下载并提取二进制..."
+
+if curl -sL --connect-timeout 15 "$FB_URL" \
+    | tar -xz -C "$BIN_DIR" filebrowser; then
+
+    chmod +x "$BIN_DIR/filebrowser"
+
+    echo "🎉 完成：已成功提取到 $BIN_DIR/filebrowser"
+    ls -lh "$BIN_DIR/filebrowser"
+else
+    echo "❌ 下载或解压失败"
+    exit 1
+fi
+
+# 3. 下载并配置 Lucky 二进制文件
+LUCKY_BASE="https://release.66666.host"
+
+echo "----------------------------------------------------"
+echo "[3/3] 正在解析 Lucky 版本信息..."
+
+# 解析版本号
+LUCKY_VER=$(curl -sL "$LUCKY_BASE/" \
+    | grep -o 'href="\./v[^/]*' \
+    | cut -d/ -f2 \
+    | sort -rV \
+    | head -1)
+
+[ -z "$LUCKY_VER" ] && { 
+    echo "❌ 获取版本失败"
+    exit 1
+}
+
+# 解析子目录
+LUCKY_SUB=$(curl -sL "$LUCKY_BASE/$LUCKY_VER/" \
+    | grep -o 'href="\./[^/]*' \
+    | cut -d/ -f2 \
+    | grep -i '^[0-9].*lucky' \
+    | head -1)
+
+[ -z "$LUCKY_SUB" ] && { 
+    echo "❌ 未找到 lucky 子目录"
+    exit 1
+}
+
+# 匹配目标架构安装包
+LUCKY_PKG=$(curl -sL "$LUCKY_BASE/$LUCKY_VER/$LUCKY_SUB/" \
+    | grep -o 'href="[^"]*' \
+    | cut -d'"' -f2 \
+    | grep -i "Linux.*$ARCH_X86_64.*\.tar\.gz" \
+    | head -1)
+
+[ -z "$LUCKY_PKG" ] && { 
+    echo "❌ 未找到 $ARCH_X86_64 包"
+    exit 1
+}
+
+echo "✅ 成功匹配: $LUCKY_VER / $LUCKY_PKG"
+echo "开始下载并提取二进制..."
+
+if curl -sL --connect-timeout 10 "$LUCKY_BASE/$LUCKY_VER/$LUCKY_SUB/$LUCKY_PKG" \
+    | tar -xz -C "$BIN_DIR" lucky; then
+
+    chmod +x "$BIN_DIR/lucky"
+
+    echo "🎉 完成：已成功提取到 $BIN_DIR/lucky"
+    ls -lh "$BIN_DIR/lucky"
+else
+    echo "❌ 下载或解压失败"
+    exit 1
+fi
 
 # 确保默认设置脚本正确收尾
 cd "$BUILDER_DIR/openwrt" || exit
@@ -410,7 +482,6 @@ CONFIG_PACKAGE_kmod-sched-cake=y
 CONFIG_PACKAGE_kmod-sched-bpf=y
 CONFIG_PACKAGE_kmod-ifb=y
 
-
 # --- 有线与虚拟网卡驱动 ---
 CONFIG_PACKAGE_kmod-r8125=y
 CONFIG_PACKAGE_kmod-r8152=y
@@ -427,27 +498,19 @@ CONFIG_PACKAGE_kmod-usb-storage=y
 CONFIG_PACKAGE_kmod-crypto-authenc=y
 CONFIG_PACKAGE_kmod-crypto-chacha20poly1305=y
 CONFIG_PACKAGE_kmod-crypto-curve25519=y
-EOF
 
-cat >> .config <<EOF
-# 1. USB 3.0 及基础挂载支持
+# --- 磁盘格式与挂载支持 ---
 CONFIG_PACKAGE_kmod-usb-storage=y
 CONFIG_PACKAGE_kmod-usb-storage-uas=y
 CONFIG_PACKAGE_kmod-fs-autofs4=y
 CONFIG_PACKAGE_block-mount=y
-
-# 2. EXT4 文件系统及相关驱动支持
 CONFIG_PACKAGE_kmod-fs-ext4=y
 CONFIG_PACKAGE_kmod-crypto-crc32c=y
 CONFIG_PACKAGE_kmod-lib-crc16=y
-
-# 3. 磁盘分区与 EXT4 格式化工具 (e2fsprogs)
 CONFIG_PACKAGE_e2fsprogs=y
 CONFIG_PACKAGE_fdisk=y
 CONFIG_PACKAGE_cfdisk=y
 CONFIG_PACKAGE_parted=y
-
-# 4. 其他常用 U 盘文件系统支持 (FAT32/exFAT/NTFS)
 CONFIG_PACKAGE_kmod-fs-vfat=y
 CONFIG_PACKAGE_kmod-fs-exfat=y
 CONFIG_PACKAGE_kmod-fs-ntfs3=y
