@@ -15,6 +15,7 @@ cat feeds.conf.default
 git clone --depth 1 https://github.com/kenzok8/small-package small-package
 cp -rf small-package/{luci-app-ramfree,luci-app-poweroff} package/
 
+git clone --depth 1 https://github.com/animegasan/luci-app-wolplus package/luci-app-wolplus
 git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
 git clone --depth 1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
 git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash \
@@ -166,6 +167,7 @@ CONFIG_PACKAGE_luci-app-uhttpd=y
 CONFIG_PACKAGE_luci-app-upnp=y
 CONFIG_PACKAGE_luci-app-ramfree=y
 CONFIG_PACKAGE_luci-app-poweroff=y
+CONFIG_PACKAGE_luci-app-wolplus=y
 
 # --- 网络代理与虚拟网关 ---
 CONFIG_PACKAGE_luci-app-openclash=y
