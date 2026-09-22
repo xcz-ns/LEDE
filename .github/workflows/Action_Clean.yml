@@ -17,9 +17,9 @@ on:
         type: string
 
       keep_build_runs:
-        description: "保留 Build 成功记录数"
+        description: "每个设备保留 Build 成功记录数"
         required: true
-        default: "9"
+        default: "3"
         type: string
 
       keep_toolchain_runs:
@@ -130,15 +130,49 @@ jobs:
           keep_minimum_runs: 0
           retain_days: 0
 
-      - name: 清理 OpenWrt_Build (按配额保留成功记录)
+      - name: 清理 OpenWrt_Build (按设备各保留最新 N 个成功记录)
         if: github.event_name == 'workflow_dispatch' || contains(github.event.workflow_run.path, 'OpenWrt_Build.yml')
-        uses: Mattraks/delete-workflow-runs@v2
-        with:
-          token: ${{ github.token }}
-          delete_workflow_pattern: "OpenWrt_Build.yml"
-          delete_run_by_conclusion_pattern: "success"
-          keep_minimum_runs: ${{ github.event.inputs.keep_build_runs || 9 }}
-          retain_days: ${{ github.event.inputs.retain_days || 0 }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # 设备列表（需与 OpenWrt_Build.yml 中的设备保持一致）
+          DEVICES="LEDE_Cudy LEDE_R3S LEDE_x86"
+          KEEP="${{ github.event.inputs.keep_build_runs || 3 }}"
+
+          echo "========================================"
+          echo "按设备清理 OpenWrt_Build 成功记录，每设备保留最新 $KEEP 个"
+          echo "========================================"
+
+          # run-name 格式：「构建 设备名」，通过 displayTitle 筛选设备
+          # 按设备分别筛选成功记录，每个设备保留最新 KEEP 个，删除更早的
+          for DEVICE in $DEVICES; do
+            echo "--- 处理设备：$DEVICE ---"
+
+            OLD_IDS=$(
+              gh run list \
+                --repo "$REPO" \
+                --workflow "OpenWrt_Build.yml" \
+                --limit 100 \
+                --json databaseId,displayTitle,conclusion,createdAt \
+                -q "sort_by(.createdAt) | reverse | .[] | select(.conclusion == \"success\") | select(.displayTitle | test(\"${DEVICE}\")) | .databaseId" \
+                | tail -n +$((KEEP + 1)) || true
+            )
+
+            if [ -z "$OLD_IDS" ]; then
+              echo "  无需清理的旧运行记录。"
+              continue
+            fi
+
+            for RUN_ID in $OLD_IDS; do
+              echo "  删除旧运行：$RUN_ID"
+              gh run delete "$RUN_ID" --repo "$REPO" || true
+            done
+          done
+
+          echo "========================================"
+          echo "OpenWrt_Build 成功记录清理完成"
+          echo "========================================"
 
       # ==========================
       # 3. 清理 OpenWrt_Toolchain_Build
