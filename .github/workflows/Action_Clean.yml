@@ -84,7 +84,7 @@ jobs:
                 --limit 100 \
                 --json tagName,publishedAt \
                 -q 'sort_by(.publishedAt) | reverse | .[].tagName' \
-                | grep -E "-${DEVICE}$" \
+                | grep -E -- "-${DEVICE}$" \
                 | tail -n +$((KEEP + 1)) || true
             )
 
