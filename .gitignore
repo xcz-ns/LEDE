@@ -1,0 +1,101 @@
+# ==========================================
+# OpenWrt / LEDE 编译产物
+# ==========================================
+bin/
+build_dir/
+staging_dir/
+tmp/
+dl/
+logs/
+feeds/
+package/feeds/
+
+# 编译临时文件
+.config
+.config.old
+.config.prev
+tmp/
+*.o
+*.a
+*.so
+*.ko
+*.mod
+*.mod.c
+*.order
+*.symvers
+modules.builtin
+modules.order
+Module.symvers
+
+# ==========================================
+# 固件镜像文件
+# ==========================================
+*.bin
+*.img
+*.itb
+*.iso
+*.tar
+*.tar.gz
+*.tar.xz
+*.tar.bz2
+*.rootfs*
+*.sysupgrade*
+*.factory*
+*.manifest
+*.buildinfo
+*.sha256sums
+*.vmdk
+*.vdi
+*.vhdx
+*.qcow2
+*.raw
+
+# ==========================================
+# SDK / Toolchain
+# ==========================================
+*sdk*
+*toolchain*
+*imagebuilder*
+
+# ==========================================
+# IPK 软件包
+# ==========================================
+*.ipk
+*.ipk.manifest
+
+# ==========================================
+# 临时文件
+# ==========================================
+*.tmp
+*.temp
+*.log
+*.swp
+*.swo
+*~
+*.bak
+*.orig
+*.rej
+
+# ==========================================
+# 系统文件
+# ==========================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==========================================
+# IDE / 编辑器
+# ==========================================
+.vscode/
+.idea/
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# ==========================================
+# 其他
+# ==========================================
+artifact/
+github-builder/
+root.img
+mnt.img
