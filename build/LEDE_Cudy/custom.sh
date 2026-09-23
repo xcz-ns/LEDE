@@ -5,8 +5,14 @@
 # ==============================================================================
 
 # 切换 LEDE LuCI 源
-sed -i 's/^\(src-git luci \).*/\1https:\/\/github.com\/coolsnowwolf\/luci.git;master/' feeds.conf.default
-sed -i '/^#/d' feeds.conf.default
+sed -i \
+  's|^\(src-git luci \).*|\1https://github.com/coolsnowwolf/luci.git;master|' \
+  feeds.conf.default
+  
+sed -i \
+  -e '/^#/d' \
+  -e '/helloworld/d' \
+  feeds.conf.default
 
 # 打印默认 feeds 配置
 cat feeds.conf.default
@@ -26,7 +32,7 @@ git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash
 ./scripts/feeds update -a
 
 # 删除冲突软件
-rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-ramfree,luci-app-poweroff}
+rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-ramfree,luci-app-poweroff,luci-app-rclone}
 rm -rf feeds/luci/themes/luci-theme-argon
 
 ./scripts/feeds install -a -f
@@ -231,30 +237,6 @@ EOF
 # 禁用冗余插件
 # ------------------------------------------------------------------------------
 cat >> .config <<EOF
-CONFIG_PACKAGE_luci-app-accesscontrol=n
-CONFIG_PACKAGE_luci-app-arpbind=n
-CONFIG_PACKAGE_luci-app-autoreboot=n
-CONFIG_PACKAGE_luci-app-ddns=n
-CONFIG_PACKAGE_luci-app-qbittorrent_dynamic=n
-CONFIG_PACKAGE_luci-app-qbittorrent=n
-CONFIG_PACKAGE_luci-app-vlmcsd=n
-CONFIG_PACKAGE_luci-app-vsftpd=n
-CONFIG_PACKAGE_luci-app-wol=n
-CONFIG_PACKAGE_luci-app-nlbwmon=n
-CONFIG_PACKAGE_luci-app-ssr-plus=n
-CONFIG_PACKAGE_ddns-scripts_aliyun=n
-CONFIG_PACKAGE_ddns-scripts_dnspod=n
-CONFIG_PACKAGE_v2ray-geoip=n
-CONFIG_PACKAGE_mihomo=n
-CONFIG_PACKAGE_luci-app-ssr-plus=n
-CONFIG_PACKAGE_luci-app-ssr-plus_Iptables_Transparent_Proxy=n
-CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_NONE_Client=n
-CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_NONE_Server=n
-CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_NONE_V2RAY=n
-CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ChinaDNS_NG=n
-CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Http_Proxy=n
-CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Mihomo=n
-CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Libev_Client=n
 EOF
 
 # 移除行首多余缩进与空格

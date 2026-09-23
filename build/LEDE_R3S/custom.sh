@@ -5,8 +5,14 @@
 # ==============================================================================
 
 # 切换 LEDE LuCI 源
-sed -i 's/^\(src-git luci \).*/\1https:\/\/github.com\/coolsnowwolf\/luci.git;master/' feeds.conf.default
-sed -i '/^#/d' feeds.conf.default
+sed -i \
+  's|^\(src-git luci \).*|\1https://github.com/coolsnowwolf/luci.git;master|' \
+  feeds.conf.default
+  
+sed -i \
+  -e '/^#/d' \
+  -e '/helloworld/d' \
+  feeds.conf.default
 
 # 打印默认 feeds 配置
 cat feeds.conf.default
@@ -27,7 +33,7 @@ git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash
 ./scripts/feeds update -a
 
 # 删除冲突软件
-rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-filebrowser,luci-app-filebrowser-go,luci-app-dockerman,luci-app-ramfree,luci-app-poweroff}
+rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-filebrowser,luci-app-filebrowser-go,luci-app-dockerman,luci-app-ramfree,luci-app-poweroff,luci-app-rclone}
 rm -rf feeds/luci/themes/{luci-theme-argon,luci-theme-design}
 
 ./scripts/feeds install -a -f
@@ -362,18 +368,6 @@ CONFIG_PACKAGE_luci-app-ksmbd=n
 CONFIG_PACKAGE_luci-app-minidlna=n
 CONFIG_PACKAGE_luci-app-vsftpd=n
 CONFIG_PACKAGE_samba36-server=n
-CONFIG_PACKAGE_luci-app-accesscontrol=n
-CONFIG_PACKAGE_luci-app-arpbind=n
-CONFIG_PACKAGE_luci-app-autoreboot=n
-CONFIG_PACKAGE_luci-app-ddns=n
-CONFIG_PACKAGE_luci-app-qbittorrent_dynamic=n
-CONFIG_PACKAGE_luci-app-qbittorrent=n
-CONFIG_PACKAGE_luci-app-vlmcsd=n
-CONFIG_PACKAGE_luci-app-wol=n
-CONFIG_PACKAGE_luci-app-nlbwmon=n
-CONFIG_PACKAGE_luci-app-ssr-plus=n
-CONFIG_PACKAGE_ddns-scripts_aliyun=n
-CONFIG_PACKAGE_ddns-scripts_dnspod=n
 
 # ------------------------------------------------------------------------------
 # 无线驱动核心与 USB 网卡支持 (包含 MT7612U 与 RTL 系列)

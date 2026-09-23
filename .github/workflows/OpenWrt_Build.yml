@@ -199,8 +199,19 @@ jobs:
               cp -Rf "$item" "$BUILDER_DIR/openwrt/"
             fi
           done
-          
+
           cd "$BUILDER_DIR/openwrt"
+          
+          echo "精简 target.mk 默认预装包..."
+          sed -i \
+            -e 's|ddns-scripts_aliyun ddns-scripts_dnspod luci-app-ddns luci-app-upnp luci-app-autoreboot|luci-app-upnp luci-app-autoreboot|' \
+            -e 's|luci-app-arpbind luci-app-filetransfer luci-app-vsftpd luci-app-ssr-plus luci-app-vlmcsd|luci-app-filetransfer|' \
+            -e 's|luci-app-accesscontrol luci-app-nlbwmon luci-app-turboacc luci-app-wol|luci-app-turboacc|' \
+            include/target.mk
+
+          echo "修改完成，当前默认 luci-app 包"
+          grep -A6 "DEFAULT_PACKAGES.router" include/target.mk | grep -o "luci-app-[a-z]*"
+
           
           echo "执行自定义修改脚本..."
           if [ -f "${WORKPATH}/$CUSTOM_SH" ]; then
