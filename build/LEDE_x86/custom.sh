@@ -351,7 +351,6 @@ CONFIG_VMDK_IMAGES=y
 CONFIG_DEVEL=y
 CONFIG_CCACHE=y
 CONFIG_IB=y
-CONFIG_SDK=y
 EOF
 
 # ------------------------------------------------------------------------------

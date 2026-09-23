@@ -229,6 +229,14 @@ jobs:
           
           echo "写入配置文件并执行 make defconfig..."
           mv "${WORKPATH}/$CONFIG_FILE" .config
+          
+          if [ "${UPLOAD_SDK}" = "true" ]; then
+            echo "CONFIG_SDK=y" >> .config
+            echo "已追加 CONFIG_SDK=y 到 .config"
+          else
+            echo "UPLOAD_SDK不为true，跳过追加CONFIG_SDK=y"
+          fi
+          
           make defconfig
 
       - name: 🔑 准备 SSH 调试 - 创建 SSH 运行配置目录
