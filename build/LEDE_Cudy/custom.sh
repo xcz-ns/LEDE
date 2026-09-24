@@ -32,7 +32,7 @@ git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash
 ./scripts/feeds update -a
 
 # 删除冲突软件
-rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-ramfree,luci-app-poweroff,luci-app-rclone}
+rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-ramfree,luci-app-poweroff,luci-app-rclone,luci-app-passwall}
 rm -rf feeds/luci/themes/luci-theme-argon
 
 ./scripts/feeds install -a -f

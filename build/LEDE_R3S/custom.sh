@@ -33,7 +33,7 @@ git clone --depth 1 https://github.com/vernesong/OpenClash.git package/openclash
 ./scripts/feeds update -a
 
 # 删除冲突软件
-rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-filebrowser,luci-app-filebrowser-go,luci-app-dockerman,luci-app-ramfree,luci-app-poweroff,luci-app-rclone}
+rm -rf feeds/luci/applications/{luci-app-openclash,luci-app-filebrowser,luci-app-filebrowser-go,luci-app-dockerman,luci-app-ramfree,luci-app-poweroff,luci-app-rclone,luci-app-passwall}
 rm -rf feeds/luci/themes/{luci-theme-argon,luci-theme-design}
 
 ./scripts/feeds install -a -f
@@ -363,10 +363,6 @@ CONFIG_PACKAGE_kmod-r8152=y
 # ------------------------------------------------------------------------------
 CONFIG_PACKAGE_autosamba=n
 CONFIG_PACKAGE_autosamba_INCLUDE_KSMBD=n
-CONFIG_PACKAGE_luci-app-samba=n
-CONFIG_PACKAGE_luci-app-ksmbd=n
-CONFIG_PACKAGE_luci-app-minidlna=n
-CONFIG_PACKAGE_luci-app-vsftpd=n
 CONFIG_PACKAGE_samba36-server=n
 
 # ------------------------------------------------------------------------------
