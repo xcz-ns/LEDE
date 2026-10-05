@@ -478,6 +478,9 @@ CONFIG_PACKAGE_kmod-veth=y
 CONFIG_PACKAGE_kmod-macvlan=y
 CONFIG_PACKAGE_kmod-br-netfilter=y
 CONFIG_PACKAGE_kmod-wireguard=y
+CONFIG_PACKAGE_iptables-mod-fullconenat=y
+CONFIG_PACKAGE_firewall=y
+CONFIG_PACKAGE_firewall4=n
 
 # --- 队列与流控加速 ---
 CONFIG_PACKAGE_kmod-sched-cake=y
