@@ -61,84 +61,25 @@ EOF
 # ------------------------------------------------------------------------------
 # 二进制组件预集成 (Lucky)
 # ------------------------------------------------------------------------------
-BASE="https://release.66666.host"
-DIR="${BUILDER_DIR:-.}/openwrt/files/usr/bin"
-ARCH="arm64"
+URL="https://release.66666.host/v3.1.2beta/3.1.2_lucky/lucky_3.1.2_Linux_arm64.tar.gz"
+DIR="$BUILDER_DIR/openwrt/files/usr/bin"
 
 mkdir -p "$DIR"
 
 echo "----------------------------------------------------"
-echo "[1/1] 正在解析 Lucky 版本信息..."
+echo "开始下载并提取 lucky"
 
-# 1. 解析最新版本号
-VER=$(curl -fsSL "$BASE/" \
-    | grep -o 'href="\./v[^/]*' \
-    | cut -d/ -f2 \
-    | sort -rV \
-    | head -n 1)
+if curl -sL --connect-timeout 10 "$URL" \
+    | tar -xz -C "$DIR" --strip-components=1 lucky 2>/dev/null || \
+   curl -sL --connect-timeout 10 "$URL" \
+    | tar -xz -C "$DIR" lucky; then
 
-[ -z "$VER" ] && { 
-    echo "❌ 获取版本失败"
-    exit 1
-}
+    chmod +x "$DIR/lucky"
 
-# 2. 解析子目录（支持中文编码和大小写匹配）
-# 优先匹配带 lucky 的目录，如果没有则默认取数字开头的第一个可用子目录
-SUB=$(curl -fsSL "$BASE/$VER/" \
-    | grep -o 'href="\./[^/]*' \
-    | cut -d/ -f2 \
-    | grep -i '^[0-9].*lucky' \
-    | head -n 1)
-
-# 兜底：如果上面的正则没匹配到（如全部是全能版/万吉目录），取第一个数字开头的子目录
-[ -z "$SUB" ] && SUB=$(curl -fsSL "$BASE/$VER/" \
-    | grep -o 'href="\./[^/]*' \
-    | cut -d/ -f2 \
-    | grep '^[0-9]' \
-    | head -n 1)
-
-[ -z "$SUB" ] && { 
-    echo "❌ 未找到可用的子目录"
-    exit 1
-}
-
-# 3. 匹配目标架构安装包
-PKG=$(curl -fsSL "$BASE/$VER/$SUB/" \
-    | grep -o 'href="[^"]*' \
-    | cut -d'"' -f2 \
-    | grep -i "Linux.*$ARCH.*\.tar\.gz" \
-    | head -n 1)
-
-[ -z "$PKG" ] && { 
-    echo "❌ 未找到对应 $ARCH 的安装包"
-    exit 1
-}
-
-echo "✅ 成功匹配: $VER / $PKG"
-echo "开始下载并提取二进制..."
-
-# 4. 下载并精准提取 lucky（兼容包内包含或不包含子文件夹的情况）
-TMP_DIR=$(mktemp -d)
-trap 'rm -rf "$TMP_DIR"' EXIT
-
-if curl -fsSL --connect-timeout 15 "$BASE/$VER/$SUB/$PKG" -o "$TMP_DIR/lucky.tar.gz"; then
-    # 解压到临时目录
-    tar -xzf "$TMP_DIR/lucky.tar.gz" -C "$TMP_DIR"
-    
-    # 查找并移动二进制文件到目标位置
-    TARGET_BIN=$(find "$TMP_DIR" -type f -name "lucky" | head -n 1)
-    
-    if [ -n "$TARGET_BIN" ] && [ -f "$TARGET_BIN" ]; then
-        mv -f "$TARGET_BIN" "$DIR/lucky"
-        chmod +x "$DIR/lucky"
-        echo "🎉 完成：已成功提取到 $DIR/lucky"
-        ls -lh "$DIR/lucky"
-    else
-        echo "❌ 压缩包中未找到 lucky 可执行文件"
-        exit 1
-    fi
+    echo "🎉 完成：已成功提取到 $DIR/lucky"
+    ls -lh "$DIR"
 else
-    echo "❌ 下载失败，请检查网络或 URL: $BASE/$VER/$SUB/$PKG"
+    echo "❌ 下载或解压失败"
     exit 1
 fi
 
