@@ -69,13 +69,8 @@ mkdir -p "$DIR"
 echo "----------------------------------------------------"
 echo "开始下载并提取 lucky"
 
-if curl -sL --connect-timeout 10 "$URL" \
-    | tar -xz -C "$DIR" --strip-components=1 lucky 2>/dev/null || \
-   curl -sL --connect-timeout 10 "$URL" \
-    | tar -xz -C "$DIR" lucky; then
-
+if curl -fsSL --connect-timeout 15 "$URL" | tar -xz -C "$DIR" lucky; then
     chmod +x "$DIR/lucky"
-
     echo "🎉 完成：已成功提取到 $DIR/lucky"
     ls -lh "$DIR"
 else
