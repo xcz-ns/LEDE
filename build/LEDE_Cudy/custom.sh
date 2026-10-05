@@ -178,6 +178,9 @@ CONFIG_PACKAGE_luci-app-wolplus=y
 # --- 网络代理与虚拟网关 ---
 CONFIG_PACKAGE_luci-app-openclash=y
 CONFIG_PACKAGE_luci-proto-wireguard=y
+CONFIG_PACKAGE_iptables-mod-fullconenat=y
+CONFIG_PACKAGE_firewall=y
+CONFIG_PACKAGE_firewall4=n
 
 # --- 远程管理与文件传输 ---
 CONFIG_PACKAGE_openssh-client=y
