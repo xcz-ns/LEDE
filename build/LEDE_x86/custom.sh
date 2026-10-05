@@ -267,57 +267,21 @@ else
 fi
 
 # 3. 下载并配置 Lucky 二进制文件
-LUCKY_BASE="https://release.66666.host"
+LUCKY_URL="https://release.66666.host/v3.1.2beta/3.1.2_lucky/lucky_3.1.2_Linux_${ARCH_X86_64}.tar.gz"
 
 echo "----------------------------------------------------"
-echo "[3/3] 正在解析 Lucky 版本信息..."
+echo "[3/3] 开始下载并提取 Lucky 二进制..."
+echo "✅ 目标直链: $LUCKY_URL"
 
-# 解析版本号
-LUCKY_VER=$(curl -sL "$LUCKY_BASE/" \
-    | grep -o 'href="\./v[^/]*' \
-    | cut -d/ -f2 \
-    | sort -rV \
-    | head -1)
-
-[ -z "$LUCKY_VER" ] && { 
-    echo "❌ 获取版本失败"
-    exit 1
-}
-
-# 解析子目录
-LUCKY_SUB=$(curl -sL "$LUCKY_BASE/$LUCKY_VER/" \
-    | grep -o 'href="\./[^/]*' \
-    | cut -d/ -f2 \
-    | grep -i '^[0-9].*lucky' \
-    | head -1)
-
-[ -z "$LUCKY_SUB" ] && { 
-    echo "❌ 未找到 lucky 子目录"
-    exit 1
-}
-
-# 匹配目标架构安装包
-LUCKY_PKG=$(curl -sL "$LUCKY_BASE/$LUCKY_VER/$LUCKY_SUB/" \
-    | grep -o 'href="[^"]*' \
-    | cut -d'"' -f2 \
-    | grep -i "Linux.*$ARCH_X86_64.*\.tar\.gz" \
-    | head -1)
-
-[ -z "$LUCKY_PKG" ] && { 
-    echo "❌ 未找到 $ARCH_X86_64 包"
-    exit 1
-}
-
-echo "✅ 成功匹配: $LUCKY_VER / $LUCKY_PKG"
-echo "开始下载并提取二进制..."
-
-if curl -sL --connect-timeout 10 "$LUCKY_BASE/$LUCKY_VER/$LUCKY_SUB/$LUCKY_PKG" \
+if curl -sL --connect-timeout 10 "$LUCKY_URL" \
+    | tar -xz -C "$BIN_DIR" --strip-components=1 lucky 2>/dev/null || \
+   curl -sL --connect-timeout 10 "$LUCKY_URL" \
     | tar -xz -C "$BIN_DIR" lucky; then
 
     chmod +x "$BIN_DIR/lucky"
 
     echo "🎉 完成：已成功提取到 $BIN_DIR/lucky"
-    ls -lh "$BIN_DIR/lucky"
+    ls -lh "$BIN_DIR"
 else
     echo "❌ 下载或解压失败"
     exit 1
