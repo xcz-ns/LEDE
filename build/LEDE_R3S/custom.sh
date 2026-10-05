@@ -295,6 +295,9 @@ CONFIG_PACKAGE_procps-ng-vmstat=y
 CONFIG_PACKAGE_coreutils-stat=y
 CONFIG_PACKAGE_shadow-utils=y
 CONFIG_PACKAGE_libcap-bin=y
+CONFIG_PACKAGE_iptables-mod-fullconenat=y
+CONFIG_PACKAGE_firewall=y
+CONFIG_PACKAGE_firewall4=n
 
 # ------------------------------------------------------------------------------
 # 磁盘管理与文件系统支持
