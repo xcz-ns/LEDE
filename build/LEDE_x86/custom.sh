@@ -273,15 +273,12 @@ echo "----------------------------------------------------"
 echo "[3/3] 开始下载并提取 Lucky 二进制..."
 echo "✅ 目标直链: $LUCKY_URL"
 
-if curl -sL --connect-timeout 10 "$LUCKY_URL" \
-    | tar -xz -C "$BIN_DIR" --strip-components=1 lucky 2>/dev/null || \
-   curl -sL --connect-timeout 10 "$LUCKY_URL" \
-    | tar -xz -C "$BIN_DIR" lucky; then
+if curl -fsSL --connect-timeout 15 "$LUCKY_URL" | tar -xz -C "$BIN_DIR" lucky; then
 
     chmod +x "$BIN_DIR/lucky"
 
     echo "🎉 完成：已成功提取到 $BIN_DIR/lucky"
-    ls -lh "$BIN_DIR"
+    ls -lh "$BIN_DIR/lucky"
 else
     echo "❌ 下载或解压失败"
     exit 1
