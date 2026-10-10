@@ -61,7 +61,7 @@ EOF
 # ------------------------------------------------------------------------------
 # 二进制组件预集成 (Lucky)
 # ------------------------------------------------------------------------------
-URL="https://release.66666.host/v3.1.3beta/3.1.3_lucky/lucky_3.1.3_Linux_arm64.tar.gz"
+URL="https://release.66666.host/v3.1.4beta/3.1.4_lucky/lucky_3.1.4_Linux_arm64.tar.gz"
 DIR="$BUILDER_DIR/openwrt/files/usr/bin"
 
 mkdir -p "$DIR"

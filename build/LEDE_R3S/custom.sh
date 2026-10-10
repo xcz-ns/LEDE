@@ -153,7 +153,7 @@ else
 fi
 
 # 3. 下载并配置 Lucky 二进制文件
-LUCKY_URL="https://release.66666.host/v3.1.3beta/3.1.3_lucky/lucky_3.1.3_Linux_arm64.tar.gz"
+LUCKY_URL="https://release.66666.host/v3.1.4beta/3.1.4_lucky/lucky_3.1.4_Linux_arm64.tar.gz"
 
 echo "----------------------------------------------------"
 echo "[3/3] 开始下载并提取 Lucky 二进制..."
