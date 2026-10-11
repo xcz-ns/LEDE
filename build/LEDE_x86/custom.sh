@@ -267,16 +267,49 @@ else
 fi
 
 # 3. 下载并配置 Lucky 二进制文件
-LUCKY_URL="https://release.66666.host/v3.1.4beta/3.1.4_lucky/lucky_3.1.4_Linux_${ARCH_X86_64}.tar.gz"
-
 echo "----------------------------------------------------"
-echo "[3/3] 开始下载并提取 Lucky 二进制..."
-echo "✅ 目标直链: $LUCKY_URL"
+echo "[3/3] 正在解析 Lucky 版本信息..."
+
+LUCKY_BASE="https://release.66666.host"
+
+# 页面解析函数（使用鲁棒正则匹配提取目录）
+parse_lucky_dirs() {
+    curl -fsSL --connect-timeout 15 "$1" | awk '
+    {
+        s=$0
+        while (match(s, /href[ \t]*=[ \t]*["\047][^"\047]*["\047]/)) {
+            v=substr(s,RSTART,RLENGTH)
+            s=substr(s,RSTART+RLENGTH)
+            sub(/^[^=]*=[ \t]*["\047]/,"",v)
+            sub(/["\047]$/,"",v)
+            sub(/^\.\//,"",v)
+            sub(/\/$/,"",v)
+            if (v ~ /^[A-Za-z0-9][A-Za-z0-9._+-]*$/) print v
+        }
+    }' | sort -u
+}
+
+# 动态获取最新大版本和产品目录
+VERSION_DIR=$(parse_lucky_dirs "${LUCKY_BASE}/" | grep -E '^v[0-9][A-Za-z0-9._+-]*$' | sort -Vr | head -n 1)
+
+if [ -n "$VERSION_DIR" ]; then
+    PRODUCT_DIR=$(parse_lucky_dirs "${LUCKY_BASE}/${VERSION_DIR}/" | grep -E '^[0-9][A-Za-z0-9._+-]*_lucky$' | sort -Vr | head -n 1)
+fi
+
+[ -z "$VERSION_DIR" ] || [ -z "$PRODUCT_DIR" ] && {
+    echo "❌ 获取 Lucky 动态版本信息失败"
+    exit 1
+}
+
+# 组合下载直链 (这里调用了顶部的 ${ARCH_X86_64} 变量)
+CORE_VERSION="${PRODUCT_DIR%_lucky}"
+LUCKY_URL="${LUCKY_BASE}/${VERSION_DIR}/${PRODUCT_DIR}/lucky_${CORE_VERSION}_Linux_${ARCH_X86_64}.tar.gz"
+
+echo "✅ 成功匹配: $LUCKY_URL"
+echo "开始下载并提取二进制..."
 
 if curl -fsSL --connect-timeout 15 "$LUCKY_URL" | tar -xz -C "$BIN_DIR" lucky; then
-
     chmod +x "$BIN_DIR/lucky"
-
     echo "🎉 完成：已成功提取到 $BIN_DIR/lucky"
     ls -lh "$BIN_DIR/lucky"
 else
