@@ -102,7 +102,7 @@ if grep -q "^CONFIG_PACKAGE_luci-app-openclash=y" "$CONF"; then
         chmod +x "$CORE_DIR/clash_meta"
 
         echo "🎉 完成：已成功提取到 $CORE_DIR/clash_meta"
-        ls -lh "$CORE_DIR/clash_meta"
+        ls -lh "$CORE_DIR"
     else
         echo "❌ 下载或解压失败"
         exit 1
@@ -146,7 +146,7 @@ if curl -sL --connect-timeout 15 "$FB_URL" \
     chmod +x "$BIN_DIR/filebrowser"
 
     echo "🎉 完成：已成功提取到 $BIN_DIR/filebrowser"
-    ls -lh "$BIN_DIR/filebrowser"
+    ls -lh "$BIN_DIR"
 else
     echo "❌ 下载或解压失败"
     exit 1
@@ -197,7 +197,7 @@ echo "开始下载并提取二进制..."
 if curl -fsSL --connect-timeout 15 "$LUCKY_URL" | tar -xz -C "$BIN_DIR" lucky; then
     chmod +x "$BIN_DIR/lucky"
     echo "🎉 完成：已成功提取到 $BIN_DIR/lucky"
-    ls -lh "$BIN_DIR/lucky"
+    ls -lh "$BIN_DIR"
 else
     echo "❌ 下载或解压失败"
     exit 1
